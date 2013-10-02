@@ -1,0 +1,11 @@
+DIR="$1"
+export LANG="C"
+cd $HOME/projects
+git pull
+test -r ~/ruby19.rc && . ~/ruby19.rc
+
+if [ -d "$DIR" ]; then
+  cd "$DIR"
+  rake edit
+fi
+
