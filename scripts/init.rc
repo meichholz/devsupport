@@ -1,8 +1,18 @@
+# vim: ft=sh
 DIR="$1"
 export LANG="C"
 cd $HOME/projects
 git pull
-test -r ~/ruby19.rc && . ~/ruby19.rc
+
+RUBY=ruby19
+case "$DIR" in
+  mdbrails) RUBY=ruby20 ;;
+  mdbrails2) RUBY=ruby18 ;;
+  *) RUBY=ruby19 ;;
+esac
+test -r ~/$RUBY.rc && . ~/$RUBY.rc
+
+rake git:update
 
 if [ -d "$DIR" ]; then
   cd "$DIR"
