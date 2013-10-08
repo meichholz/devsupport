@@ -138,7 +138,9 @@ end
 
 # ========== code coverage =======================
 namespace :cov do
-  @gcovr_opt="-r . --branches -u -e '#{@gcov_exclude}'"
+  @gcov_bin = ENV["GCOV"];
+  @gcov_bin = "gcov" if @gcov_bin.nil?
+  @gcovr_opt="--gcov-executable=#{@gcov_bin} -r . --branches -u -e '#{@gcov_exclude}'"
   @gcovr_bin="devsupport/bin/gcovr"
 
   desc "run the SUT"
