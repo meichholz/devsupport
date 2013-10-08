@@ -1,5 +1,8 @@
 test -r ~/pm-git/software || exit 1
-for i in ~/projects/dotvim ~/pm-git/software/dotvim ~/pm-git/config ; do
+
+cd $HOME
+
+for i in ~/projects/devsupport ~/projects/dotvim ~/pm-git/software/devsupport ~/pm-git/config ; do
 	cd $i || exit 2
     git pull
 done
@@ -9,7 +12,7 @@ DRY_MODE="--dry-run"
 
 PAIRS='
 projects/dotvim:pm-git/config/puppet/modules/editors/files/dotvim
-projects/lib:pm-git/software/lib
+projects/devsupport:pm-git/software/devsupport
 '
 cd $HOME || exit 3
 for pair in $PAIRS ; do
