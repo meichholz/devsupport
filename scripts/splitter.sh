@@ -16,15 +16,15 @@ MOTHER_PROJECT="$3"
 
 WORKDIR=$PWD
 
-GITBASE=/srv/git
+GITBASE=/srv/git/repos/software
 
 if [ ! -r .gitfiddle ]; then
 	echo "this is not the work directory"
 	exit 1
 fi
 
-test -z "$SUB_PROJECT" && SUB_PROJECT=dotvim
-test -z "$MOTHER_PROJECT" && MOTHER_PROJECT=allprojects
+test -z "$SUB_PROJECT" && SUB_PROJECT=devsupport
+test -z "$MOTHER_PROJECT" && MOTHER_PROJECT=root
 
 if [ -z "$MOTHER_PROJECT" -o -z "$SUB_PROJECT" ]; then
   echo "usage: doozamagic [mode] [subdir] [motherproject]"
