@@ -12,7 +12,8 @@ DRY_MODE="--dry-run"
 
 PAIRS='
 projects/dotvim:pm-git/config/puppet/modules/editors/files/dotvim
-projects/devsupport:pm-git/software/devsupport
+projects/devsupport/tasks:pm-git/software/devsupport/tasks
+projects/devsupport/vim:pm-git/software/devsupport/vim
 '
 cd $HOME || exit 3
 for pair in $PAIRS ; do
