@@ -14,6 +14,7 @@ PAIRS='
 projects/dotvim:pm-git/config/puppet/modules/editors/files/dotvim
 projects/devsupport/tasks:pm-git/software/devsupport/tasks
 projects/devsupport/vim:pm-git/software/devsupport/vim
+projects/devsupport/bin:pm-git/software/devsupport/bin
 '
 cd $HOME || exit 3
 for pair in $PAIRS ; do
