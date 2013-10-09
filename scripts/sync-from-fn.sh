@@ -3,7 +3,9 @@ DRY_MODE="--dry-run"
 [ "$1" = "--force" ] && DRY_MODE=""
 
 PAIRS='
-projects/devsupport:pm-git/software/devsupport
+projects/devsupport/tasks:pm-git/software/devsupport/tasks
+projects/devsupport/vim:pm-git/software/devsupport/vim
+projects/devsupport/bin:pm-git/software/devsupport/bin
 '
 cd $HOME || exit 3
 for pair in $PAIRS ; do

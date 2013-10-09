@@ -1,14 +1,11 @@
 # rake support for standard gem projects with rspec and cucumber
 #
-# version: 1.0.1 - 11.9.2013
-# version: 1.0.2 - 17.9.2013
 # version: 1.0.3 - 8.10.2013
+# version: 1.0.4 - 9.10.2013
 
 require "rake/clean"
 require 'rubygems/package_task'
 require "cucumber/rake/task"
-require "ci/reporter/rake/cucumber"
-require "ci/reporter/rake/rspec"
 
 abort "set umask to 022, please" if File.umask!=022
 
@@ -16,7 +13,9 @@ abort "set umask to 022, please" if File.umask!=022
 @executable = FileList.new("bin/*")[0].to_s if @executable.nil?
 @frontend = "bundle exec #{@executable}" if @frontend.nil?
 
-CLEAN.include(["TAGS", "tags"])
+CLEAN.include ["TAGS", "tags"]
+CLEAN.include ["t","tt","*~"]
+CLOBBER.include ["spec/reports", "features/reports", "features/result.json", "doc"]
 
 # intentionally simplified
 if @editfiles.nil?
@@ -52,11 +51,11 @@ namespace :spec do
   desc "Create specs"
   task :report do
     sh "test -d doc || mkdir doc"
-    sh "bundle exec rspec -f html -o doc/spec.html -f doc -o doc/spec.text"
+    sh "bundle exec rspec -f html -o spec/index.html -f doc -o spec/index.text"
   end
 
   desc "Run rspec unit tests"
-  task :rspec do
+  task :all do
     IO.popen("bundle exec rspec --no-color") do |rspec|
       rspec.each_line do |line|
         # strip off error comment on failing SUT code
@@ -87,14 +86,14 @@ namespace :features do
     # generic task
     desc "FIXME: add config/cucumber.yml with check profile"
     task :check do
-      sh "cucumber -r features"
+      sh "bundle exec cucumber -r features"
     end
   end
 
   desc "Create features"
   task :report do
     sh "test -d doc || mkdir doc"
-    sh "bundle exec cucumber -P -f html -o doc/features.html -f pretty --no-color -o doc/features.text -r features"
+    sh "bundle exec cucumber -f html -o features/index.html -f pretty --no-color -o features/index.text -r features"
   end
 
 end
@@ -102,25 +101,28 @@ end
 namespace :test do
 
   desc "Run all regression tests"
-  task :all => [ :rspec, 'features:check' ]
+  task :all => [ 'spec:all', 'features:check' ]
 
   desc "Check Work in Progress"
-  task :wip => [ :rspec, 'features:wip' ]
+  task :wip => [ 'spec:all', 'features:wip' ]
 
 end
 
-namespace :cov do
+namespace :ci do
 
-  desc "export test coverage in spec/report"
-  task :rspec => "ci:setup:rspec" do
-    sh "bundle exec rspec"
+  desc "test and export RSpec results"
+  task :spec do
+    sh "bundle exec rspec -f html -o spec/index.html"
+    sh "bundle exec rspec -f CI::Reporter::RSpec"
   end
 
-  task :cucumber => "ci:setup:cucumber" do
-    sh "bundle exec cucumber --format=CI::Reporter::Cucumber"
+  desc "test and export cucumber results"
+  task :features do
+    format = "CI::Reporter::Cucumber"
+    sh "bundle exec cucumber -f html -o features/index.html -f json -o features/result.json -f #{format}"
   end
-  desc "export coverage for everything"
-  task :all => [ :clearset, :rspec, :cucumber ]
+  desc "report on everything"
+  task :all => [ :clearset, :spec, :features ]
 
   desc "view the combined html"
   task :view do
@@ -131,5 +133,33 @@ namespace :cov do
     cachefile="coverage/.resultset.json"
     FileUtils .rm cachefile if File.exists? cachefile
   end
+end
+
+# TODO: flexiby and intelligize these tasks!
+namespace :man do
+  desc "Build manpage(s)"
+  task :build => [ "man/#{@program_name}.1" ]
+  task "man/#{@program_name}.1" => [ "man/#{@program_name}.1.ronn" ] do
+    sh "#{@env_ronn} man/#{@program_name}.1.ronn"
+  end
+
+  desc "View manpage"
+  task :view => :build do
+    sh "man -l man/#{@program_name}.1"
+  end
+end
+
+namespace :doc do
+  desc "Build integrated documentation" 
+  task :build do
+    sh "#{@env_rdoc} -q -a README.rdoc lib/#{@program_name}/*.rb"
+  end
+
+  desc "View rdoc"
+  task :view => [ :build ] do
+    sh "#{@env_browser} doc/index.html"
+    puts "You may now run: rake test && rake stage"
+  end
+
 end
 
