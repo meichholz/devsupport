@@ -6,7 +6,7 @@ git pull
 
 RUBY=ruby19
 case "$DIR" in
-  mdbrails) RUBY=ruby20 ;;
+  porn|mdbrails) RUBY=ruby20 ;;
   mdbrails2) RUBY=ruby18 ;;
   *) RUBY=ruby19 ;;
 esac
