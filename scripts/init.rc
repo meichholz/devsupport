@@ -5,17 +5,18 @@ cd $HOME/projects
 git pull
 
 RUBY=ruby19
-case "$DIR" in
-  porn|mdbrails) RUBY=ruby20 ;;
-  mdbrails2) RUBY=ruby18 ;;
-  *) RUBY=ruby19 ;;
-esac
+INITCMD="rake edit"
+# let a local ruby.rc overwrite $RUBY
+[ -r $DIR/init.rc ] && . $DIR/init.rc
+
+echo "sourcing $RUBY.rc"
 test -r ~/$RUBY.rc && . ~/$RUBY.rc
 
-rake git:update
+# rake git:update
 
+echo "starting up with $INITCMD"
 if [ -d "$DIR" ]; then
   cd "$DIR"
-  rake edit
+  $INITCMD
 fi
 
