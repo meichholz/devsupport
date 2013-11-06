@@ -12,7 +12,7 @@ INITCMD="rake edit"
 echo "sourcing $RUBY.rc"
 test -r ~/$RUBY.rc && . ~/$RUBY.rc
 
-rake git:update
+ENV_DIR="$DIR" rake git:update_core
 
 echo "starting up with $INITCMD"
 if [ -d "$DIR" ]; then
