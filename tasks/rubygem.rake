@@ -150,16 +150,19 @@ namespace :man do
 end
 
 namespace :doc do
-  desc "Build integrated documentation" 
-  task :build do
+  desc "Build integrated documentation with rdoc" 
+  task :rdoc do
     sh "#{@env_rdoc} -q -a README.rdoc lib/#{@program_name}/*.rb"
   end
-
-  desc "View rdoc"
+  desc "Build integrated documentation with yard"
+  task :yard do
+    sh "yard"
+    sh "yard graph --full | dot -T svg -o doc/diagram.svg"
+  end
+  desc "View doc"
   task :view => [ :build ] do
     sh "#{@env_browser} doc/index.html"
     puts "You may now run: rake test && rake stage"
   end
-
 end
 
