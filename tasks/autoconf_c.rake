@@ -53,11 +53,16 @@ file "m4" do
   sh "cp #{@m4files} m4/" unless @m4files.nil?
 end
 
-file "Makefile" => [ "configure" ] do
+desc "run configure with options: #{@configure_options}"
+task :run_configure do
   sh "./configure #{@configure_options}"
 end
 
-desc "(re)build configure script"
+file "Makefile" => [ "configure" ] do
+  Rake::Task[:run_configure].invoke
+end
+
+desc "rebuild configure script, needs an existing configure script"
 task :reconf => [ "configure" ]
 
 task :check => [ "Makefile" ] do
@@ -66,7 +71,7 @@ end
 
 task :cleancheck => [ "configure" ] do
   sh "make distclean" if File.exists?("Makefile")
-  sh "./configure"
+  Rake::Task[:run_configure].invoke
   sh "make check"
 end
 
@@ -81,7 +86,7 @@ task :clobber => :tidyup
 desc "bootstrap everything"
 task :bootstrap => [ :clobber, "m4" ] do
   sh "autoreconf --force --verbose --install"
-  sh "./configure"
+  Rake::Task[:run_configure].invoke
   sh "make"
   puts "\nNow: make check, or rake edit..."
 end
