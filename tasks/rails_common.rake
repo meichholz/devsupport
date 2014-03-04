@@ -5,14 +5,20 @@
 # task :default => .... current target
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+require 'rake/clean'
 
 # full reset default task
 Rake::Task[:default].clear
-CLOBBER.include [ "**/*.log", "t", "tt", "tags", "coverage", "doc" ]
+CLEAN.include "**/*.log", "*~", ".*~", "t", "tt"
+CLEAN.include "log/*.log", "tmp/restart.txt"
+CLOBBER.include "*.bak", "*..orig"
+CLOBBER.include "*.sqlite3", "*.sqlite-journal"
+CLOBBER.include "tags", "coverage", "doc"
 
 @devlocale ||= 'de_DE.UTF-8'
 @devconf ||= "development"
 @editor ||= 'gvim -geometry 88x55+495-5'
+@editfiles ||= FileList.new("app/controllers/*.rb", "lib/tasks/*.rake", "db/*.rb", "local*.vim")
 
 def command?(command)
   system("which #{ command} > /dev/null 2>&1")
@@ -42,11 +48,15 @@ task :dbc do
   sh "rails dbconsole"
 end
 
+task :edit => 'dev:edit'
+
 namespace :dev do
 
-  desc "Startup test session"
-  task :startup => [ 'clobber', :'db:reset', :server, :edit, :browser ]
-  
+  unless Rake::Task[:'dev:startup']
+    desc "Startup test session"
+    task :startup => [ 'clobber', :'db:reset', :server, :edit, :browser ]
+  end
+
   desc "Start server(s) (app, doc) in terminals"
   task :server do
     sh "#{@terminal} -e 'rails server' &"
@@ -56,7 +66,7 @@ namespace :dev do
 
   desc "Start #{@browser} with app, yard etc."
   task :browser do
-    sh "#{@browser} http://localhost:3000/ http://localhost:8808 &"
+    sh "#{@browser} http://localhost:3000/#{@app_path} http://localhost:8808 &"
   end
 
   desc "Rebuild tags file"
@@ -65,9 +75,8 @@ namespace :dev do
   end
 
   desc "Start editor"
-  task :edit => :tags do
-    editfiles=Dir["lib/tasks/*.rake", "app/controllers/*.rb"]
-    sh "#{@editor} #{editfiles.join ' '} &"
+  task :edit => [ :tags, :'log:clear' ] do
+    sh "#{@editor} #{@editfiles.join ' '} &"
   end
 
   desc "all doc tasks"
@@ -81,6 +90,12 @@ namespace :dev do
   task :smoke do
     sh "rails runner script/smoke"
   end
+
+  desc "Trigger passenger reload"
+  task :reload do
+    sh "touch tmp/restart.txt"
+  end
+
 end
 
 namespace :doc do
