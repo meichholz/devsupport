@@ -1,4 +1,4 @@
-require "rake/clean"
+load File.join(File.dirname(__FILE__), 'common.rake')
 
 # Dieses Taskset dient dazu, die Schritte AUSSERHALB des von Autoconf
 # und Debian abgedeckten Bereichs zu regeln.
@@ -7,41 +7,50 @@ require "rake/clean"
 # - Neuerzeugen des configure-Skriptes
 # - Konfigurieren (ohne Debian)
 #
-# Version: 1.1 : bootstrap fixed. @configure_options neu.
+# Version: 5.3.2013
+#
+# Specific overridables:
+# @sourcedir
+# @appname
+# @amfiles
+#
+# Generic overridables:
+# @executable
+# @frontend
+# @editfiles
+#
+@sourcedir ||= "src"
+@amfiles  ||= [ "#{@sourcedir}/Makefile.am" ]
 
-if @appname.nil?
-  File.open "src/Makefile.am", "rb" do |f|
-    f.each_line do |l|
-      m = l.match(/^bin_PROGRAMS\s*=\s*(\w+)/)
-      @appname = m[1] if m
+@amfiles.each do |amfile|
+  if File.exists? amfile
+    File.open(amfile,"rb") do |f|
+      f.each_line do |l|
+        m = l.match(/^bin_PROGRAMS\s*=\s*(\w+)/)
+        @appname ||= m[1] if m
+      end
     end
   end
 end
 
-@editor = "gvim -geometry 88x55+495-5" if @editor.nil?
-@executable = FileList.new("src/#{@appname}")[0].to_s if @executable.nil?
-@frontend = "src/#{@appname}" if @frontend.nil?
+# specific settings
+@executable ||= FileList.new("#{@sourcedir}/#{@appname}")[0].to_s
+@frontend ||= "#{@sourcedir}/#{@appname}"
 
-if @editfiles.nil?
-  @editfiles = FileList.new([ # organize for speed nav
-                            "**/Makefile.am",
-                            "src/*.c*", "tests/unit/*.c*",
-                            ])
-end
+@editfiles ||= FileList.new "**/Makefile.am",
+                            "#{@sourcedir}/*.c*", "tests/unit/*.c*"
 
-if @scopefiles.nil?
-  @scopefiles = FileList.new(["**/*.c*", "**/*.h", "**/*.sh"])
-end
+@scopefiles ||= FileList.new "**/*.c*", "**/*.h", "**/*.sh"
 
-@automake_am =FileList.new("**/*.am")
+@automake_am = FileList.new("**/*.am")
 
 task :default => :check
 
-CLEAN.include("t", "tt*", "*~" )
-CLOBBER.include("configure", "build-aux",
-                "autom4te*", "aclocal.m4",
-                "cscope.out",
-                "m4", "**/Makefile.in", "**/.deps")
+CLOBBER.include "configure"
+CLEAN.include "build-aux", "autom4te*", "aclocal.m4", "m4"
+CLEAN.include "cscope.out", "doxygen", "sloc.sc"
+CLEAN.include "**/.deps"
+CLOBBER.include("**/Makefile.in") if File.exists? 'Makefile.am'
 
 file "configure" => @automake_am + ["configure.ac", "m4"] do
   sh "autoreconf --install"
@@ -76,9 +85,11 @@ task :cleancheck => [ "configure" ] do
 end
 
 desc "SAFELY remove all generated stuff"
-task :tidyup => :clean do
-  sh "fakeroot ./debian/rules clean" if File.exists?("debian/rules")
-  sh "make distclean" if File.exists?("Makefile")
+task :tidyup do
+  # do not let fail these tasks
+  system "fakeroot ./debian/rules clean" if File.exists?("debian/rules")
+  system "fakeroot make distclean" if File.exists?("Makefile")
+  Rake::Task[:clean].invoke
 end
 
 task :clobber => :tidyup
@@ -121,6 +132,27 @@ end
 
 task :tell do
   puts "frontend: #{@frontend}"
+end
+
+namespace :doc do
+
+  desc "build all documentation"
+  task :build do
+    sh "sloccount --duplicates --details --wide Rakefile #{@sourcedir} >sloc.sc"
+    sh "rm -rf doxygen || true"
+    sh "doxygen"
+  end
+
+  desc "view doc with browser"
+  task :view => [ :build ] do
+    system "#{@browser} doxygen/html/index.html"
+  end
+
+end
+
+namespace :ci do
+  desc "basic build: bootstrap, package, build doc"
+  task :base => [ 'bootstrap', 'package', 'doc:build', 'check' ]
 end
 
 
