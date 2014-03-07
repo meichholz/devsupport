@@ -5,7 +5,11 @@
 # task :default => .... current target
 # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-require 'rake/clean'
+# pre-overrides
+@editfiles ||= FileList.new("app/controllers/*.rb", "lib/tasks/*.rake", "db/*.rb", "local*.vim")
+
+load File.join(File.dirname(__FILE__), "common.rake")
+include Devsupport
 
 # full reset default task
 Rake::Task[:default].clear
@@ -14,26 +18,6 @@ CLEAN.include "log/*.log", "tmp/restart.txt"
 CLOBBER.include "*.bak", "*..orig"
 CLOBBER.include "*.sqlite3", "*.sqlite-journal"
 CLOBBER.include "tags", "coverage", "doc"
-
-@devlocale ||= 'de_DE.UTF-8'
-@devconf ||= "development"
-@editor ||= 'gvim -geometry 88x55+495-5'
-@editfiles ||= FileList.new("app/controllers/*.rb", "lib/tasks/*.rake", "db/*.rb", "local*.vim")
-
-def command?(command)
-  system("which #{ command} > /dev/null 2>&1")
-end
-
-def first_executable_of(*args)
-  args.each do |cmd|
-    return cmd if command?(cmd)
-  end
-end
-
-@hostname=`hostname`.chomp
-
-@terminal = command?("terminal") ? "terminal" : "xfce4-terminal"
-@browser ||= first_executable_of "epiphany", "iceweasel", "firefox", "konqueror", "www-browser", "x-www-browser", "epiphany"
 
 ENV['RAILS_ENV'] = @devconf
 ENV['LOCALE'] = @devlocale

@@ -1,33 +1,40 @@
 # rake support for standard gem projects with rspec and cucumber
 #
-# version: 1.0.3 - 8.10.2013
-# version: 1.0.4 - 9.10.2013
+# version: 1.1
 
-require "rake/clean"
-require 'rubygems/package_task'
-require "cucumber/rake/task"
+ds_tasks_for :common
 
-abort "set umask to 022, please" if File.umask!=022
-
-@editor = "gvim" if @editor.nil?
-@executable = FileList.new("bin/*")[0].to_s if @executable.nil?
-@frontend = "bundle exec #{@executable}" if @frontend.nil?
-
-CLEAN.include ["TAGS", "tags"]
-CLEAN.include ["t","tt","*~"]
-CLOBBER.include ["spec/reports", "features/reports", "features/result.json", "doc"]
-
-# intentionally simplified
-if @editfiles.nil?
-  @editfiles = FileList.new(["bin/*", "[Rr]akefile", "*.gemspec",
-                            "[Gg]emfile", "README.*", ]).to_s
+ds_raker.configure(defaults: true) do |opt|
+  opt.mandatory_umask = 022
+  opt.executable = FileList.new("bin/*")[0].to_s
+  opt.program_name = File.basename(opt.executable, ".rb") 
+  opt.frontend = "bundle exec #{opt.executable}"
+  opt.editfiles = FileList.new("bin/*", "[Rr]akefile", "*.gemspec",
+                               "[Gg]emfile", "README.*").to_s
 end
+
+abort "set umask to #{ds_env.mandatory_umask}, please" unless ds_env.mandatory_umask==:none or File.umask==ds_env.mandatory_umask
+
+# needs rake/clean
+CLOBBER.include "spec/reports", "features/reports", "features/result.json"
+CLOBBER.include "doc", "coverage"
+
+# this may break if no cucumber is installed at all
+if ds_raker.have_rvm?
+  ds_tasks_for :features
+end
+
+# glue tasks
+task :default => :check
+task :test => :check
+task :check => 'test:all'
+task 'doc:build' => 'doc:yard'
 
 desc "Fix permissions"
 task :fixperm do
   sh "find . -type d | xargs chmod 755"
   sh "find . -not -type d | xargs chmod 644"
-  sh "chmod a+x #{@executable}"
+  sh "chmod a+x #{ds_env.executable}"
 end
 
 desc "Rebuild TAGS"
@@ -37,7 +44,7 @@ end
 
 desc "Start edit and tagging"
 task :edit => [ :tags ] do
-  sh "#{@editor} #{@editfiles}"
+  sh "#{ds_env.editor} #{ds.env.editfiles}"
 end
 
 desc "Push build up to our package server"
@@ -66,36 +73,6 @@ namespace :spec do
     end
     fail if $?.exitstatus != 0
   end
-end
-
-namespace :features do
-  # http://www.ruby-doc.org/gems/docs/d/davidtrogers-cucumber-0.6.2/Cucumber/Rake/Task.html
-  begin
-    File.open("config/cucumber.yml") do |file|
-      file.each_line do |line|
-        if line=~/^(\w+):/ and $1!='default'
-          tname = $1
-          Cucumber::Rake::Task.new(tname, "Run cuke profile #{tname}") do |t|
-            t.profile = tname
-            t.cucumber_opts = "-r ./features"
-          end
-        end
-      end
-    end
-  rescue Errno::ENOENT => err
-    # generic task
-    desc "FIXME: add config/cucumber.yml with check profile"
-    task :check do
-      sh "bundle exec cucumber -r features"
-    end
-  end
-
-  desc "Create features"
-  task :report do
-    sh "test -d doc || mkdir doc"
-    sh "bundle exec cucumber -f html -o features/index.html -f pretty --no-color -o features/index.text -r features"
-  end
-
 end
 
 namespace :test do
@@ -135,24 +112,24 @@ namespace :ci do
   end
 end
 
-# TODO: flexiby and intelligize these tasks!
+# TODO: flexify and intelligize these tasks!
 namespace :man do
   desc "Build manpage(s)"
-  task :build => [ "man/#{@program_name}.1" ]
-  task "man/#{@program_name}.1" => [ "man/#{@program_name}.1.ronn" ] do
-    sh "#{@env_ronn} man/#{@program_name}.1.ronn"
+  task :build => [ "man/#{ds_env.program_name}.1" ]
+  task "man/#{ds_env.program_name}.1" => [ "man/#{ds_env.program_name}.1.ronn" ] do
+    sh "#{ds_env.ronn} man/#{ds_env.program_name}.1.ronn"
   end
 
   desc "View manpage"
   task :view => :build do
-    sh "man -l man/#{@program_name}.1"
+    sh "man -l man/#{ds_env.program_name}.1"
   end
 end
 
 namespace :doc do
   desc "Build integrated documentation with rdoc" 
   task :rdoc do
-    sh "#{@env_rdoc} -q -a README.rdoc lib/#{@program_name}/*.rb"
+    sh "#{ds_env.rdoc} -q -a README.rdoc lib/#{ds_env.program_name}/*.rb"
   end
   desc "Build integrated documentation with yard"
   task :yard do
@@ -161,7 +138,7 @@ namespace :doc do
   end
   desc "View doc"
   task :view => [ :build ] do
-    sh "#{@env_browser} doc/index.html"
+    sh "#{ds_env.browser} doc/index.html"
     puts "You may now run: rake test && rake stage"
   end
 end
