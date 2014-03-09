@@ -13,7 +13,8 @@ ds_raker.configure(defaults: true) do |opt|
                                "[Gg]emfile", "README.*").to_s
 end
 
-abort "set umask to #{ds_env.mandatory_umask}, please" unless ds_env.mandatory_umask==:none or File.umask==ds_env.mandatory_umask
+mask = ds_env.mandatory_umask
+abort "set umask to #{mask}, please" unless mask==:none or mask==File.umask
 
 # needs rake/clean
 CLOBBER.include "spec/reports", "features/reports", "features/result.json"
@@ -44,7 +45,7 @@ end
 
 desc "Start edit and tagging"
 task :edit => [ :tags ] do
-  sh "#{ds_env.editor} #{ds.env.editfiles}"
+  sh "#{ds_env.editor} #{ds_env.editfiles}"
 end
 
 desc "Push build up to our package server"

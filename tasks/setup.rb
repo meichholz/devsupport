@@ -8,9 +8,8 @@ module Devsupport
     def ds_tasks_for(modulename)
       Devsupport::Rake.load_tasks_for(modulename)
     end
-    def ds_env(key=nil)
-      return Devsupport::Rake.options if key.nil?
-      Devsupport::Rake.opt(key)
+    def ds_env
+      return Devsupport::Rake.options
     end
     def ds_raker
       Devsupport::Rake
@@ -23,20 +22,18 @@ module Devsupport
   class Rake
     class << self
 
-      def upstream_semaphore
-        'dev_upstream'
-      end
-
       def opt(key)
         option_hash.fetch(key, nil)
       end
 
-      def options
-        OpenStruct.new(option_hash)
-      end
-
+      # should be used just by near friends
+      # @deprecated
       def option_hash
         @defaults.merge(@customs)
+      end
+
+      def options
+        OpenStruct.new(option_hash)
       end
 
       def command?(command)
@@ -83,6 +80,37 @@ module Devsupport
         return true
       end
 
+      def load_tasks_for(modulename)
+        file = File.join(File.dirname(__FILE__), modulename.to_s+".rb")
+        # puts "DEBUG: loading #{modulename} from #{file}"
+        load file
+      end
+
+      def reload_self
+        file = upstream_file(__FILE__)
+        # try to figure out, how far we must get up to find software root
+        # TODO: This may be done somewhat cleaner and more portable...
+        if File.exists? opt(:upstream_semaphore)
+          puts "INFO: reloading #{file}"
+          load file
+        end
+      end
+
+      private
+
+      def base_path
+        File.dirname(File.dirname(__FILE__)) # eliminate "tasks"
+      end
+
+      def upstream_file(file)
+        file = file.gsub(/^.*devsupport/, 'devsupport')
+        if Dir.pwd =~ /\/(trunk|gems)\//
+          file = File.join('..', '..', file)
+        else
+          file = File.join('..', file)
+        end
+      end
+
       def defaults
         {
           editor: "gvim -geometry 88x55+495-5",
@@ -94,31 +122,12 @@ module Devsupport
           root?: (Process.uid == 0),
           rdoc: "rdoc",
           ronn: "ronn",
+          base_path: base_path,
+          upstream_semaphore: 'dev_upstream',
         }
       end
-
-      def load_tasks_for(modulename)
-        file = File.join(File.dirname(__FILE__), modulename.to_s+".rb")
-        # puts "DEBUG: loading #{modulename} from #{file}"
-        load file
-      end
-
-      def reload_upstream
-        file = __FILE__
-        # try to figure out, how far we must get up to find software root
-        # TODO: This may be done somewhat cleaner and more portable...
-        file.gsub!(/^.*devsupport/, 'devsupport')
-        if Dir.pwd =~ /\/(trunk|gems)\//
-          file = File.join('..', '..', file)
-        else
-          file = File.join('..', file)
-        end
-        if File.exists? upstream_semaphore
-          puts "INFO: reloading #{file}"
-          load file
-        end
-      end
     end
+
     @customs = Hash.new
     @defaults = defaults
   end
@@ -126,7 +135,7 @@ end
 
 unless @_devsupport_is_reloaded
   @_devsupport_is_reloaded = true
-  Devsupport::Rake.reload_upstream
+  Devsupport::Rake.reload_self
 end
 include Devsupport::DSL
 @have_devsupport = true

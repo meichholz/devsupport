@@ -1,30 +1,29 @@
-# include into Rakefile something like this:
-# vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-# prefix = File.exists?('dev_upstream') ? '..' : '.'
-# load "#{prefix}/devsupport/tasks/rails_common.rake"
-# task :default => .... current target
-# ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+load 'devsupport/tasks/base.rb'
 
-# pre-overrides
-@editfiles ||= FileList.new("app/controllers/*.rb", "lib/tasks/*.rake", "db/*.rb", "local*.vim")
+ds_configure(defaults: true) do |c|
+  c.editfiles = FileList.new "app/controllers/*.rb",
+    "lib/tasks/*.rake",
+    "db/*.rb",
+    "local*.vim"
+  c.app_path = ""
+end
 
-load File.join(File.dirname(__FILE__), "common.rake")
-include Devsupport
+ds_tasks_for :common
 
 # full reset default task
 Rake::Task[:default].clear
-CLEAN.include "**/*.log", "*~", ".*~", "t", "tt"
+CLEAN.include "**/*.log"
 CLEAN.include "log/*.log", "tmp/restart.txt"
 CLOBBER.include "*.bak", "*..orig"
 CLOBBER.include "*.sqlite3", "*.sqlite-journal"
 CLOBBER.include "tags", "coverage", "doc"
 
-ENV['RAILS_ENV'] = @devconf
-ENV['LOCALE'] = @devlocale
+ENV['RAILS_ENV'] = ds_env.devconf
+ENV['LOCALE'] = ds_env.devlocale
 
 desc "prefix: set test environment"
 task :te do
-  ENV['RAILS_ENV'] = 'test'
+  ENV['RAILS_ENV'] = :test
 end
 
 desc "short: db console"
@@ -43,14 +42,14 @@ namespace :dev do
 
   desc "Start server(s) (app, doc) in terminals"
   task :server do
-    sh "#{@terminal} -e 'rails server' &"
-    sh "#{@terminal} -e 'bundle exec yard server' &"
+    sh "#{ds_env.terminal} -e 'rails server' &"
+    sh "#{ds_env.terminal} -e 'bundle exec yard server' &"
     sleep 4
   end
 
-  desc "Start #{@browser} with app, yard etc."
+  desc "Start #{ds_env.browser} with app, yard etc."
   task :browser do
-    sh "#{@browser} http://localhost:3000/#{@app_path} http://localhost:8808 &"
+    sh "#{ds_env.browser} http://localhost:3000/#{ds_env.app_path} http://localhost:8808 &"
   end
 
   desc "Rebuild tags file"
@@ -60,7 +59,7 @@ namespace :dev do
 
   desc "Start editor"
   task :edit => [ :tags, :'log:clear' ] do
-    sh "#{@editor} #{@editfiles.join ' '} &"
+    sh "#{ds_env.editor} #{ds_env.editfiles.join ' '} &"
   end
 
   desc "all doc tasks"
@@ -91,7 +90,7 @@ namespace :doc do
 
   desc "View Yard documentation"
   task :view => :build do
-    sh "#{@browser} doc/yard/index.html &"
+    sh "#{ds_env.browser} doc/yard/index.html &"
   end
 end
 
