@@ -90,7 +90,7 @@ module Devsupport
         file = upstream_file(__FILE__)
         # try to figure out, how far we must get up to find software root
         # TODO: This may be done somewhat cleaner and more portable...
-        if File.exists? opt(:upstream_semaphore)
+        if ENV['DEV_UPSTREAM'] or File.exists?(opt(:upstream_semaphore))
           puts "INFO: reloading #{file}"
           load file
         end
@@ -115,14 +115,15 @@ module Devsupport
         {
           editor: "gvim -geometry 88x55+495-5",
           devlocale: 'de_DE.UTF-8',
-          devconf: :development,
-          terminal: best_command(%w(terminal xfce4-terminal gnome-terminal xterm)),
-          browser: best_command(%w(epiphany iceweasel firefox konqueror www-browser x-www-browser epiphany)),
+          devconf: 'development',
+          terminal: ENV['DEV_TERMINAL'] || best_command(%w(terminal xfce4-terminal gnome-terminal xterm)),
+          browser: ENV['DEV_BROWSER'] || best_command(%w(epiphany iceweasel firefox konqueror www-browser x-www-browser epiphany)),
           hostname: Socket.gethostname,
           root?: (Process.uid == 0),
           rdoc: "rdoc",
           ronn: "ronn",
           base_path: base_path,
+          yardoc_path: 'yard',
           upstream_semaphore: 'dev_upstream',
         }
       end

@@ -1,11 +1,10 @@
-load 'devsupport/tasks/base.rb'
-
 ds_configure(defaults: true) do |c|
   c.editfiles = FileList.new "app/controllers/*.rb",
     "lib/tasks/*.rake",
     "db/*.rb",
     "local*.vim"
-  c.app_path = ""
+  c.app_path = "tools"
+  yardoc_path = 'doc/yard'
 end
 
 ds_tasks_for :common
@@ -23,7 +22,7 @@ ENV['LOCALE'] = ds_env.devlocale
 
 desc "prefix: set test environment"
 task :te do
-  ENV['RAILS_ENV'] = :test
+  ENV['RAILS_ENV'] = 'test'
 end
 
 desc "short: db console"
@@ -35,10 +34,8 @@ task :edit => 'dev:edit'
 
 namespace :dev do
 
-  unless Rake::Task[:'dev:startup']
-    desc "Startup test session"
-    task :startup => [ 'clobber', :'db:reset', :server, :edit, :browser ]
-  end
+  desc "Startup development session"
+  task :startup => [ 'clobber', :'db:reset', :server, :edit, :browser ]
 
   desc "Start server(s) (app, doc) in terminals"
   task :server do
@@ -65,7 +62,7 @@ namespace :dev do
   desc "all doc tasks"
   task :doc => [ "doc:build", "diagram:all" ] do
     %w[controllers_brief controllers_complete models_brief models_complete].each do |name|
-      sh "mv doc/#{name}.svg doc/yard/#{name}.svg"
+      sh "mv doc/#{name}.svg #{ds_env.yardoc_path}/#{name}.svg"
     end
   end
 
@@ -84,13 +81,13 @@ end
 namespace :doc do
   desc "create Yard documentation"
   task :build do
-    sh "rm -rf doc/yard" if File.exists? "doc/yard"
+    sh "rm -rf #{ds_env.yardoc_path}" if File.exists?(ds_env.yardoc_path)
     sh "yard doc"
   end
 
   desc "View Yard documentation"
   task :view => :build do
-    sh "#{ds_env.browser} doc/yard/index.html &"
+    sh "#{ds_env.browser} #{ds_env.yardoc_path}/index.html &"
   end
 end
 
