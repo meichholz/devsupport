@@ -1,48 +1,37 @@
-load File.join(File.dirname(__FILE__), 'common.rake')
+ds_tasks_for :common
 
-# Dieses Taskset dient dazu, die Schritte AUSSERHALB des von Autoconf
-# und Debian abgedeckten Bereichs zu regeln.
-# - Editing
-# - Abraeumen der von Autoconf erzeugten Dateien
-# - Neuerzeugen des configure-Skriptes
-# - Konfigurieren (ohne Debian)
-#
-# Version: 5.3.2013
-#
-# Specific overridables:
-# @sourcedir
-# @appname
-# @amfiles
-#
-# Generic overridables:
-# @executable
-# @frontend
-# @editfiles
-#
-@sourcedir ||= "src"
-@amfiles  ||= [ "#{@sourcedir}/Makefile.am" ]
-
-@amfiles.each do |amfile|
-  if File.exists? amfile
-    File.open(amfile,"rb") do |f|
-      f.each_line do |l|
-        m = l.match(/^bin_PROGRAMS\s*=\s*(\w+)/)
-        @appname ||= m[1] if m
+# this task bundle assumes
+# - everything in *.ac and *.am
+# - usage of "build-aux" and "m4"
+# - no custom *.in (although basic care is taken to not clobber assets away)
+# - inplace build in "src"
+# - tests in "tests"
+# - debian standard boilerplate, if packaging is requested
+ds_configure(defaults: true) do |c|
+  c.sourcedir = "src"
+  # guess appname and executable default for trivial cases
+  appname = nil
+  amfiles = Dir["#{c.sourcedir}/**/Makefile.am"]
+  amfiles.each do |amfile|
+    if File.exists? amfile
+      # puts "INFO: checking #{amfile}"
+      File.open(amfile,"rb") do |f|
+        f.each_line do |l|
+          m = l.match(/^s?bin_PROGRAMS\s*=\s*(\w+)/)
+          appname ||= m[1] if m
+        end
       end
     end
   end
+  c.appname = appname
+  c.executable = FileList.new("#{c.sourcedir}/#{c.appname}")[0].to_s
+  c.frontend = "#{c.sourcedir}/#{c.appname}"
+  c.editfiles = FileList.new "**/Makefile.am",
+                            "#{c.sourcedir}/*.c*",
+                            "tests/unit/*.c*"
+  c.scopefiles = FileList.new "**/*.c*", "**/*.h", "**/*.sh"
+  c.automake_am = FileList.new("**/*.am")
 end
-
-# specific settings
-@executable ||= FileList.new("#{@sourcedir}/#{@appname}")[0].to_s
-@frontend ||= "#{@sourcedir}/#{@appname}"
-
-@editfiles ||= FileList.new "**/Makefile.am",
-                            "#{@sourcedir}/*.c*", "tests/unit/*.c*"
-
-@scopefiles ||= FileList.new "**/*.c*", "**/*.h", "**/*.sh"
-
-@automake_am = FileList.new("**/*.am")
 
 task :default => :check
 
@@ -52,19 +41,19 @@ CLEAN.include "cscope.out", "doxygen", "sloc.sc"
 CLEAN.include "**/.deps"
 CLOBBER.include("**/Makefile.in") if File.exists? 'Makefile.am'
 
-file "configure" => @automake_am + ["configure.ac", "m4"] do
+file "configure" => ds_env.automake_am + ["configure.ac", "m4"] do
   sh "autoreconf --install"
   sh "touch configure"
 end
 
 file "m4" do
   sh "mkdir m4"
-  sh "cp #{@m4files} m4/" unless @m4files.nil?
+  sh "cp #{ds_env.m4files} m4/" unless ds_env.m4files.nil?
 end
 
-desc "run configure with options: #{@configure_options}"
+desc "run configure with options: #{ds_env.configure_options}"
 task :run_configure do
-  sh "./configure #{@configure_options}"
+  sh "./configure #{ds_env.configure_options}"
 end
 
 file "Makefile" => [ "configure" ] do
@@ -112,7 +101,7 @@ task :tags do
   FileUtils.rm "tags" if File.exists?("tags")
   FileUtils.rm "cscope.out" if File.exists?("tags")
   sh "ctags -R --exclude=debian,pkg"
-  sh "cscope -b #{@scopefiles.to_s}"
+  sh "cscope -b #{ds_env.scopefiles.to_s}"
 end
 
 desc "clean and git status"
@@ -122,30 +111,30 @@ end
 
 desc "tag and start edit session"
 task :edit => [ :tags ] do
-  sh "#{@editor} #{@editfiles.to_s}"
+  sh "#{ds_env.editor} #{ds_env.editfiles.to_s}"
 end
 
 desc "run app"
 task :run do
-  sh "#{@frontend}"
+  sh "#{ds_env.frontend}"
 end
 
 task :tell do
-  puts "frontend: #{@frontend}"
+  puts "frontend: #{ds_env.frontend}"
 end
 
 namespace :doc do
 
   desc "build all documentation"
   task :build do
-    sh "sloccount --duplicates --details --wide Rakefile #{@sourcedir} >sloc.sc"
+    sh "sloccount --duplicates --details --wide Rakefile #{ds_env.sourcedir} >sloc.sc"
     sh "rm -rf doxygen || true"
     sh "doxygen"
   end
 
   desc "view doc with browser"
   task :view => [ :build ] do
-    system "#{@browser} doxygen/html/index.html"
+    system "#{ds_env.browser} doxygen/html/index.html"
   end
 
 end
@@ -154,5 +143,4 @@ namespace :ci do
   desc "basic build: bootstrap, package, build doc"
   task :base => [ 'bootstrap', 'package', 'doc:build', 'check' ]
 end
-
 

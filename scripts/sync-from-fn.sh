@@ -6,7 +6,7 @@ PAIRS='
 projects/devsupport/tasks:pm-git/software/devsupport/tasks
 projects/devsupport/vim:pm-git/software/devsupport/vim
 projects/devsupport/bin:pm-git/software/devsupport/bin
-projects/devsupport/tasks:pm-git/software/devsupport/yard
+projects/devsupport/yard:pm-git/software/devsupport/yard
 '
 cd $HOME || exit 3
 for pair in $PAIRS ; do

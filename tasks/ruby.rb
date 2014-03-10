@@ -6,6 +6,7 @@ ds_tasks_for :common
 
 ds_raker.configure(defaults: true) do |opt|
   opt.mandatory_umask = 022
+  opt.rvm_only = true
   opt.executable = FileList.new("bin/*")[0].to_s
   opt.program_name = File.basename(opt.executable, ".rb") 
   opt.frontend = "bundle exec #{opt.executable}"
@@ -13,16 +14,19 @@ ds_raker.configure(defaults: true) do |opt|
                                "[Gg]emfile", "README.*").to_s
 end
 
-mask = ds_env.mandatory_umask
-abort "set umask to #{mask}, please" unless mask==:none or mask==File.umask
+ds_raker.assert_sanity
 
 # needs rake/clean
 CLOBBER.include "spec/reports", "features/reports", "features/result.json"
 CLOBBER.include "doc", "coverage"
 
 # this may break if no cucumber is installed at all
+# and is practically overridden by rvm_only :-)
 if ds_raker.have_rvm?
   ds_tasks_for :features
+else
+  STDERR.puts "WARNING: please develop with RVM for the development GEMs"
+  STDERR.puts "WARNING: falling back to provision only functionality"
 end
 
 # glue tasks

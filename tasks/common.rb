@@ -1,3 +1,5 @@
+load File.join(File.dirname(__FILE__), 'rake_abandon.rb')
+
 CLEAN.include ".yardoc", "*~", "t", "tt"
 
 desc "Bump modules to upstream"

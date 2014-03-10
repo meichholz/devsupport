@@ -17,6 +17,9 @@ module Devsupport
     def ds_configure(opt={}, &block)
       Devsupport::Rake.configure(opt, &block)
     end
+    def ds_assert_sanity
+      Devsuppoert::Rake.assert_sanity
+    end
   end
 
   class Rake
@@ -36,14 +39,16 @@ module Devsupport
         OpenStruct.new(option_hash)
       end
 
+      # @return [Boolean]
       def command?(command)
         system("which #{command} > /dev/null 2>&1")
       end
 
+      # @return [Self]
       def configure(opt={})
         override = opt.fetch(:override, true)
         target = opt.fetch(:defaults, false) ? @defaults : @customs
-        newopt = OpenStruct.new(@customs)
+        newopt = OpenStruct.new(@defaults)
         yield(newopt)
         newopt.marshal_dump.each do |key,value|
           if override
@@ -52,6 +57,7 @@ module Devsupport
             target[key] ||= value
           end
         end
+        return self
       end
 
       def best_command(*args)
@@ -69,21 +75,40 @@ module Devsupport
         end
       end
 
-      # @return [True] when full setup is possible
+      # @return [Self]
+      def assert_umask
+        mask = opt(:mandatory_umask)
+        abort "FATAL: Set umask to 0#{mask.to_s(8)}, please" if mask!=:none and mask!=File.umask
+        self
+      end
+
+      # @return [Self]
+      def assert_rvm
+        abort "FATAL: You need RVM in GEM_PATH to proceed." unless have_rvm? or not(opt(:rvm_only))
+        self
+      end
+
+      # put it all together
+      # @return [Self]
+      def assert_sanity
+        assert_umask
+        assert_rvm
+      end
+
+      # @return [Boolean] True, if RVM is in search path
       def have_rvm?
-        return true unless ds_env.rvm_only
         unless ENV['GEM_PATH'] and ENV['GEM_PATH']=~/\.rvm/
-          STDERR.puts "WARNING: please develop with RVM for the development GEMs"
-          STDERR.puts "WARNING: falling back to provision only functionality"
           return FALSE
         end
         return true
       end
 
+      # @return [Self]
       def load_tasks_for(modulename)
         file = File.join(File.dirname(__FILE__), modulename.to_s+".rb")
         # puts "DEBUG: loading #{modulename} from #{file}"
         load file
+        self
       end
 
       def reload_self
@@ -104,7 +129,7 @@ module Devsupport
 
       def upstream_file(file)
         file = file.gsub(/^.*devsupport/, 'devsupport')
-        if Dir.pwd =~ /\/(trunk|gems)\//
+        if Dir.pwd =~ /\/(trunk$|gems\/)/
           file = File.join('..', '..', file)
         else
           file = File.join('..', file)
@@ -120,8 +145,10 @@ module Devsupport
           browser: ENV['DEV_BROWSER'] || best_command(%w(epiphany iceweasel firefox konqueror www-browser x-www-browser epiphany)),
           hostname: Socket.gethostname,
           root?: (Process.uid == 0),
+          mandatory_umask: :none,
           rdoc: "rdoc",
           ronn: "ronn",
+          rvm_only: false,
           base_path: base_path,
           yardoc_path: 'yard',
           upstream_semaphore: 'dev_upstream',
