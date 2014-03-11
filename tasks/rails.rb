@@ -5,6 +5,7 @@ ds_configure(defaults: true) do |c|
     "local*.vim"
   c.app_path = "tools"
   c.yardoc_path = 'doc/yard'
+  c.startup_tasks = [ 'clobber', :'db:reset', :server, :edit, :browser ]
 end
 
 ds_tasks_for :common
@@ -35,12 +36,12 @@ task :edit => 'dev:edit'
 namespace :dev do
 
   desc "Startup development session"
-  task :startup => [ 'clobber', :'db:reset', :server, :edit, :browser ]
+  task :startup => ds_env.startup_tasks
 
   desc "Start server(s) (app, doc) in terminals"
   task :server do
-    sh "#{ds_env.terminal} -e 'rails server' &"
-    sh "#{ds_env.terminal} -e 'bundle exec yard server' &"
+    ds_termsh 'rails server'
+    ds_termsh 'bundle exec yard server'
     sleep 4
   end
 

@@ -18,7 +18,10 @@ module Devsupport
       Devsupport::Rake.configure(opt, &block)
     end
     def ds_assert_sanity
-      Devsuppoert::Rake.assert_sanity
+      Devsupport::Rake.assert_sanity
+    end
+    def ds_termsh(*command)
+      Devsupport::Rake.sh_in_terminal(wait: false, cmd: command)
     end
   end
 
@@ -73,6 +76,12 @@ module Devsupport
           spec=eval(File.read(gemspecname))
           Gem::PackageTask.new(spec) { }
         end
+      end
+
+      def sh_in_terminal(opt={})
+        cmd=opt.fetch(:cmd, "echo we_need_some_command")
+        wait=opt.fetch(:wait, false)
+        sh "#{ds_env.terminal}", "-e", commands.join(' '), wait ? '&' : ''
       end
 
       # @return [Self]
@@ -151,7 +160,10 @@ module Devsupport
           rvm_only: false,
           base_path: base_path,
           yardoc_path: 'yard',
+          startup_tasks: %w(clean edit),
+          debug_rake: ENV['DEBUG_RAKE'] ? true : false,
           upstream_semaphore: 'dev_upstream',
+          run_arguments: "",
         }
       end
     end
