@@ -4,7 +4,7 @@ ds_configure(defaults: true) do |c|
     "db/*.rb",
     "local*.vim"
   c.app_path = "tools"
-  yardoc_path = 'doc/yard'
+  c.yardoc_path = 'doc/yard'
 end
 
 ds_tasks_for :common
@@ -59,13 +59,6 @@ namespace :dev do
     sh "#{ds_env.editor} #{ds_env.editfiles.join ' '} &"
   end
 
-  desc "all doc tasks"
-  task :doc => [ "doc:build", "diagram:all" ] do
-    %w[controllers_brief controllers_complete models_brief models_complete].each do |name|
-      sh "mv doc/#{name}.svg #{ds_env.yardoc_path}/#{name}.svg"
-    end
-  end
-
   desc "Start script/smoke"
   task :smoke do
     sh "rails runner script/smoke"
@@ -79,15 +72,22 @@ namespace :dev do
 end
 
 namespace :doc do
-  desc "create Yard documentation"
-  task :build do
+  desc "create all documentation"
+  task :build => [ :yard, :'diagram:all' ] do
+    %w[controllers_brief controllers_complete models_brief models_complete].each do |name|
+      sh "mv doc/#{name}.svg #{ds_env.yardoc_path}/#{name}.svg"
+    end
+  end
+
+  desc "create yard documentation"
+  task :yard do
     sh "rm -rf #{ds_env.yardoc_path}" if File.exists?(ds_env.yardoc_path)
     sh "yard doc"
   end
 
-  desc "View Yard documentation"
+  desc "View common documentation"
   task :view => :build do
-    sh "#{ds_env.browser} #{ds_env.yardoc_path}/index.html &"
+    sh "#{ds_env.browser} file://#{Dir.pwd}/#{ds_env.yardoc_path}/index.html &"
   end
 end
 
