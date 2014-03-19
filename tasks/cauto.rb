@@ -23,6 +23,7 @@ ds_configure(defaults: true) do |c|
       end
     end
   end
+  c.make_options = ""
   c.appname = appname
   c.executable = FileList.new("#{c.sourcedir}/#{c.appname}")[0].to_s
   c.frontend = "#{c.sourcedir}/#{c.appname}"
@@ -39,7 +40,10 @@ CLOBBER.include "configure"
 CLEAN.include "build-aux", "autom4te*", "aclocal.m4", "m4"
 CLEAN.include "cscope.out", "doxygen", "sloc.sc"
 CLEAN.include "**/.deps"
-CLOBBER.include("**/Makefile.in") if File.exists? 'Makefile.am'
+if File.exists? 'Makefile.am'
+  CLOBBER.include "**/Makefile.in"
+  CLOBBER.exclude "gtest/**/Makefile.in"
+end
 
 file "configure" => ds_env.automake_am + ["configure.ac", "m4"] do
   sh "autoreconf --install"
@@ -64,13 +68,13 @@ desc "rebuild configure script, needs an existing configure script"
 task :reconf => [ "configure" ]
 
 task :check => [ "Makefile" ] do
-  sh "make check"
+  sh "make #{ds_env.make_options} check"
 end
 
 task :cleancheck => [ "configure" ] do
-  sh "make distclean" if File.exists?("Makefile")
+  sh "make #{ds_env.make_options} distclean" if File.exists?("Makefile")
   Rake::Task[:run_configure].invoke
-  sh "make check"
+  sh "make #{ds_env.make_options} check"
 end
 
 desc "SAFELY remove all generated stuff"
