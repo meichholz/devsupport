@@ -1,0 +1,13 @@
+<% @items.each do |section| %>
+  <b><li><%= h(section[:header]) %></li></b>
+  <% section[:items].each do |codo| %>
+    <% n = 1 %>
+    <li class="r<%= n %>">
+    <%= h(codo.name) %>
+    <%= link_object(codo, codo.title, nil, false) %>
+    </li>
+    <% n = (n==1) ? 2 : 1 %>
+  <% end %>
+<% end %>
+
+
