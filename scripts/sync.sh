@@ -25,7 +25,7 @@ syncThem()
 	  their_dir=`echo $pair | cut -d: -f$1`
 	  my_dir=`echo $pair | cut -d: -f$2`
 	  echo ">>> rsyncing <$my_dir> to <$their_dir>"
-	  modes="-rtu --verbose --cvs-exclude"
+	  modes="-rtuvC --include=tags"
 	  modes="$modes $DRY_MODE"
 	  rsync $modes "$my_dir"/ "$their_dir" # slash on source is important
   done
