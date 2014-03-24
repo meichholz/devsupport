@@ -1,0 +1,9 @@
+load File.join(File.dirname(__FILE__), '..', 'tasks', 'setup.rb')
+
+ds_configure do |c|
+  c.editfiles = Dir['**/*.*rb'].join(" ")
+end
+
+ds_tasks_for :ruby
+
+

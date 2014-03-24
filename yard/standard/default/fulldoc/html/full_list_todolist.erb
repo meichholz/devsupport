@@ -1,6 +1,6 @@
-<% @items.each do |section| %>
-  <b><li><%= h(section[:header]) %></li></b>
-  <% section[:items].each do |codo| %>
+<% @items.each do |item| %>
+  <h3><%= h(item[:header]) %></h3>
+  <% item[:codos].each do |codo| %>
     <% n = 1 %>
     <li class="r<%= n %>">
     <%= h(codo.name) %>
