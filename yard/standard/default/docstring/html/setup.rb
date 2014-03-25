@@ -1,11 +1,16 @@
 def init
   super
-  sections.place([:fixme, :think]).after(:index)
+  sections.place([:fixme, :todo, :think]).after(:index)
 end
 
 def fixme
     @label = "FIX ME: "
     generic_todo :fixme
+end
+
+def todo
+    @label = "TODO: "
+    generic_todo :todo
 end
 
 def think

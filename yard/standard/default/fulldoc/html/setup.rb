@@ -1,18 +1,36 @@
-# linked in by layout/html/setup.rb
 
-def init_dummy
+def init
   super
   begin
-    generate_todo_index # would not work this way, investigate!
+    serialize_todolist_index
   rescue => e
-    path = options.serializer.serialized_path(object)
-    log.error "Macht 'Bumm' in #{path}"
+    path = options.serializer.serialized_path(options.object)
+    log.error "Exception occurred while generating soliton file '#{path}'"
     log.backtrace(e)
   end
 end
 
+def serialize_todolist_index
+  layout = Object.new.extend(T('layout'))
+  Templates::Engine.with_serializer('_todolist.html', options.serializer) do
+    options.object = todolist_index_object
+    # explode_now
+    T('layout').run(options)
+  end
+end
+
+def todolist_index_object
+  # @note we should synthesize some suitable object to render.
+  # @think how to set an object type?
+  #   But to place an :alltodos tag somewhere is DRY enough for now.
+  # @return the first object that has an :alltodos tag.
+  all = YARD::Registry.all.select{|codo| codo.has_tag? :alltodos }
+  return nil if all.empty?
+  object = all[0]
+  # @todo override path or something to get a clear serialized_path
+end
+
 def generate_todolist_list
-  generate_todo_index
   @items = todolist_items
   @list_class = "class" # no own style sheet
   @list_title = "Undone"
@@ -21,12 +39,6 @@ def generate_todolist_list
   # - the search list registration type
   @list_type = 'todolist'
   asset('todolist_list.html', erb(:full_list)) # contains something like a frame
-end
-
-def generate_todo_index
-  @items = todolist_items
-  # @todo we need SOME LAYOUT HERE and have ... nothing here
-  asset('_todolist.html', erb(:todolist_index)) # contains something like a frame
 end
 
 def todolist_items

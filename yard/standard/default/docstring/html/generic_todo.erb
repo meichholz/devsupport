@@ -1,7 +1,7 @@
 <div class="note todo">
   <% object.tags(@tag).each do |tag| %>
     <strong><%=@label%></strong> 
-    <%= htmlify_line(tag.text) %>
+    <%= htmlify_line tag.text %>
   <% end %>
 </div>
 

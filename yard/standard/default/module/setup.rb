@@ -1,34 +1,44 @@
 def init
   super
-  sections.place(:todolist).after(:box_info)
+  sections.place([:global_todolist, :local_todolist]).after(:box_info)
 end
 
-def todolist
-  return unless object.has_tag?(:todolist)
+def global_todolist
+  return "" unless object.has_tag?(:alltodos)
+  @searchable = YARD::Registry.all
   @items = Array.new
-  add_todo_items @items, "FIX ME", :fixme
-  add_todo_items @items, "To do", :todo
-  add_todo_items @items, "Think again", :think
-  out = @items.empty? ? "" : erb(:todolist)
+  generic_todolist YARD::Registry.all, "All Loose Ends"
+end
+
+def generic_todolist(codos, label)
+  @label = label
+  @items = Array.new
+  add_todo_items @items, codos, "FIX ME", :fixme
+  add_todo_items @items, codos, "To do", :todo
+  add_todo_items @items, codos, "Think again", :think
+  out = ""
+  out = erb(:todolist) unless @items.empty?
   @items = nil
   out
 end
 
-def add_todo_items(items, header, tag)
-  codos = todo_codo_list(tag)
-  return nil if codos.empty?
-  items << { label: header, tag: tag, codos: codos }
+def local_todolist
+  return "" unless object.has_tag?(:todolist)
+  # @todo get all objects under this module/class
+  generic_todolist [ object ], "All Loose Ends"
 end
 
-#  @return [Array] all items that have tags with given name 
-def todo_codo_list(*tags)
-  YARD::Registry.all.select do |codo|
-    rc = false
-    tags.each do |tag|
-      rc ||= codo.tag(tag)
+def add_todo_items(items, codos, header, tagname)
+  tags = Array.new
+  codos.each do |codo|
+    codo.tags.each do |dtag|
+      if dtag.tag_name==tagname.to_s
+        tags << dtag
+      end
     end
-    rc
   end
+  return nil if tags.empty?
+  items << { label: header, tagname: tagname, tags: tags }
 end
 
 

@@ -1,18 +1,18 @@
-<h2>Loose Ends</h2>
-<div id="contents">
-  <ul>
-    <% n=1 %>
-    <% @items.each do |part| %>
-      <li class="r<%= n %>">
-      <strong><%= h(part[:label]) %>: </strong>
-      <% part[:codos].each do |codo| %>
-        <%= link_object(codo, codo.title, nil, false) %>
-        <p><%= h(codo.docstring) %></p>
+<h2><%= @label %></h2>
+<% @items.each do |part| %>
+  <div id="contents">
+    <h3><%= htmlify(part[:label]) %></h3>
+    <ul>
+      <% n=1 %>
+      <% part[:tags].each do |tag| %>
+        <li class="r<%= n %>">
+        <%= link_object(tag.object, tag.object.title, nil, false) %>
+        <p><%= htmlify_line(tag.text) %></p>
         <% n += 1 ; n=1 if n>2 %>
+        </li>
       <% end %>
-      </li>
-    <% end %>
-  </ul>
-</div>
+    </ul>
+  </div>
+<% end %>
 
 
