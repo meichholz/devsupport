@@ -12,6 +12,7 @@ ds_raker.configure(defaults: true) do |opt|
   opt.frontend = "bundle exec #{opt.executable}"
   opt.editfiles = FileList.new("bin/*", "[Rr]akefile", "*.gemspec",
                                "[Gg]emfile", "README.*").to_s
+  opt.gemspec = "#{opt.program_name}.gemspec"
 end
 
 ds_raker.assert_sanity
@@ -37,8 +38,8 @@ task 'doc:build' => 'doc:yard'
 
 desc "Fix permissions"
 task :fixperm do
-  sh "find . -type d | xargs chmod 755"
-  sh "find . -not -type d | xargs chmod 644"
+  sh "find lib -type d | xargs chmod 755"
+  sh "find lib -not -type d | xargs chmod 644"
   sh "chmod a+x #{ds_env.executable}"
 end
 
@@ -52,10 +53,21 @@ task :edit => [ :tags ] do
   sh "#{ds_env.editor} #{ds_env.editfiles}"
 end
 
-desc "Push build up to our package server"
-task :push => [ :build, :test, :package ] do
-  Dir.chdir ".." do
-    sh "rake push"
+if File.exists?(ds_env.gemspec)
+  require "rubygems/package_task"
+  load ds_env.gemspec
+  if @gemspec
+    Gem::PackageTask.new(@gemspec) do |pkg|
+      pkg.need_zip = true
+    end
+    desc "Push build up to our package server"
+    task :push => [ :build, :test, :repackage ] do
+      Dir.chdir ".." do
+        sh "rake push"
+      end
+    end
+  else
+    raise "please assign @gemspec in #{ds_env.gemspec}"
   end
 end
 
@@ -118,12 +130,13 @@ namespace :ci do
 end
 
 # TODO: flexify and intelligize these tasks!
+
+task "man/#{ds_env.program_name}.1" => [ "man/#{ds_env.program_name}.1.ronn" ] do
+  sh "#{ds_env.ronn} man/#{ds_env.program_name}.1.ronn"
+end
 namespace :man do
   desc "Build manpage(s)"
   task :build => [ "man/#{ds_env.program_name}.1" ]
-  task "man/#{ds_env.program_name}.1" => [ "man/#{ds_env.program_name}.1.ronn" ] do
-    sh "#{ds_env.ronn} man/#{ds_env.program_name}.1.ronn"
-  end
 
   desc "View manpage"
   task :view => :build do
