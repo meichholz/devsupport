@@ -16,22 +16,24 @@ ds_configure(defaults: true) do |c|
   c.executable = File.join("src", appname)
   c.cmake_base_options = "-DCMAKE_INSTALL_PREFIX:PATH=/usr"
   c.cmake_options = nil
+  c.make_bin = "make"
   c.concurrency = 4
   c.root_dir = Dir.pwd
   c.build_dir = "build_dir"
   c.frontend = c.executable
   c.features="tests/features"
-  c.gcov_exclude = '^googletest'
-  c.covr_bin = "devsupport/bin/gcovr"
+  c.gcovr_exclude = '^googletest'
+  c.gcovr_bin = "devsupport/bin/gcovr"
   c.editfiles = FileList.new("**/CMakeLists.txt",
                             "src/*.c*", "README*" )
   c.scopefiles = FileList.new("src/**/*.c*", "src/**/*.h",
                               "tests/**/*.c*", "tests/**/*.h",
                               "tests/**/*.sh")
   c.gcc_versions = nil
+  # do NOT preset c.sut without any need!
 end
 
-def ds_cmake_configure
+def ds_post_configure
   version = nil
   if ds_env.gcc_versions
     ds_env.gcc_versions.each do |ver|
@@ -49,9 +51,9 @@ def ds_cmake_configure
     ENV["GCOV"]  = "gcov-#{version}"
   end
   ds_configure(defaults: true) do |c|
-    c.make = "make -j#{ds_env.concurrency}"
-    c.gcov_bin = version ? "gcov-#{version}" : "gcov"
-    c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r . --branches -u -e '#{ds_env.gcov_exclude}'"
+    c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency}"
+    c.gcovr_bin = version ? "gcov-#{version}" : "gcov"
+    c.gcovr_opt = "--gcov-executable=#{c.gcovr_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
     c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
   end
   if ds_env.debug_rake
@@ -66,7 +68,6 @@ CLEAN.include "t", "tt*", "*~"
 CLEAN.include "tags", "cscope.out"
 CLOBBER.include ds_env.build_dir
 
-
 task :default => :check
 
 desc "reconfigure the source"
@@ -79,18 +80,16 @@ end
 
 desc "configure via cmake"
 task :configure do
-  unless File.exists? ds_env.build_dir
-    FileUtils.mkdir ds_env.build_dir
-    Dir.chdir ds_env.build_dir do
-      sh "cmake #{ds_env.cmake_base_options} #{ds_env.cmake_options} #{ds_env.root_dir}"
-    end
+  FileUtils.mkdir ds_env.build_dir unless  File.exists?(ds_env.build_dir)
+  Dir.chdir ds_env.build_dir do
+    sh "cmake #{ds_env.cmake_base_options} #{ds_env.cmake_options} #{ds_env.root_dir}"
   end
 end
 
 desc "build the source"
 task :build => :configure do
   Dir.chdir ds_env.build_dir do
-    sh "#{ds_env.make}" # VERBOSE=1
+    sh "#{ds_env.make_bin}" # VERBOSE=1
   end 
 end
 
@@ -151,7 +150,7 @@ namespace :test do
   task :suite => 'build' do
     Dir.chdir ds_env.build_dir do
       ENV["GTEST_COLOR"]="yes"
-      system("#{ds_env.make} test")
+      system("#{ds_env.make_bin} test")
     end 
   end
 end
@@ -159,7 +158,7 @@ end
 # ========== code coverage =======================
 namespace :cov do
 
-  desc "run the SUT"
+  desc "run the SUT, producing coverage data"
   task :run => 'build' do
     output="#{ds_env.build_dir}/tests/unit/reports/"
     sh "#{ds_env.sut} --gtest_output=xml:#{output}"
@@ -211,6 +210,20 @@ namespace :doc do
       sh "evince depdot.ps"
     end
   end
+
+  desc "build doxygen documentation"
+  task :doxygen do
+    FileUtils.rm_rf 'doxygen' if File.exists? 'doxygen'
+    FileUtils.mkdir 'doxygen'
+    sh "doxygen"
+    puts "now reload Your brower, or point it to"
+    puts "file:///home/marian/pm-git/software/mguardd/trunk/doxygen/html/index.html"
+    puts "doxygen/html/index.html"
+  end
+
+  desc "build all documentation for jenkins"
+  task :all => [ :doxygen ]
+
 end
 
 

@@ -5,8 +5,7 @@ end
 
 def navbar
   @items = Array.new
-  @items << { href: "README.md", label: "Main Document", }
-  @items << { href: "index.html", label: "Index", }
+  @items << { href: "index.html", label: "Home", }
   if have_todos?
     @items << { href: "_todolist.html", label: "Todo List", }
   end

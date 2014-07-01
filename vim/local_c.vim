@@ -1,3 +1,6 @@
+" note: bindings have been deactiveted in favor of projectionist.
+" Navigation to test files is missing. Think about that...
+
 set foldmethod=marker
 let maplocalleader=g:My_Leader
 let g:L_ProjectDirectory=getcwd()
@@ -167,17 +170,17 @@ endfunction
 call s:setupProject()
 
 " bindings
-command! R call L_CycleRelated()
-command! -nargs=0 Emakefile call L_EditMakefile()
-command! -nargs=0 Ecmakelists call L_EditCMakeLists()
-command! -nargs=? Eunittest call L_EditUnittest(<f-args>)
-command! -nargs=? Emock call L_EditMock(<f-args>)
-command! -nargs=? Ecode call L_EditCmodule(<f-args>)
-command! -nargs=? Eheader call L_EditCheader(<f-args>)
-command! -nargs=? Efunctional call L_EditFunctionaltest(<f-args>)
+"command! R call L_CycleRelated()
+"command! -nargs=0 Emakefile call L_EditMakefile()
+"command! -nargs=0 Ecmakelists call L_EditCMakeLists()
+"command! -nargs=? Eunittest call L_EditUnittest(<f-args>)
+"command! -nargs=? Emock call L_EditMock(<f-args>)
+"command! -nargs=? Ecode call L_EditCmodule(<f-args>)
+"command! -nargs=? Eheader call L_EditCheader(<f-args>)
+"command! -nargs=? Efunctional call L_EditFunctionaltest(<f-args>)
 
-nmap <F7> :R<CR>
-imap <F7> <C-C>:R<CR>
+"nmap <F7> :R<CR>
+"imap <F7> <C-C>:R<CR>
 
 " see: http://learnvimscriptthehardway.stevelosh.com/
 command! Lcheck call L_Rake('check')
