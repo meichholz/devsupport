@@ -1,5 +1,11 @@
 module Hoe::DevSupport
-  def define_devsupport_tasks
+  def define_devsupport_tasks # name by hoe framework
+
+    CLEAN.include "spec/reports"
+    CLOBBER.include "spec/index.html"
+    CLEAN.include "coverage", "emigma.log"
+    CLEAN.include "features/result.json", "features/reports"
+    CLOBBER.include "features/index.html"
 
     namespace :ds do
       ds_tasks_for :common
@@ -54,6 +60,37 @@ module Hoe::DevSupport
       Dir.chdir ".." do
         sh "rake push"
       end
+    end
+
+# @todo coverage viewer and -cleanup
+# @todo priming/rewriting of .gitignore
+
+    desc "Cucumber"
+    task :features do
+      sh "bundle exec cucumber --format progress #{ds_env.cucumber_options.join(' ')}"
+    end
+
+    namespace :ci do
+
+      desc "All tests in once"
+      task :all => [ :clearset, :spec, :features ]
+
+      desc "Rspec for Jenkins"
+      task :spec do
+        sh "bundle exec rspec #{ds_env.rspec_options.join(' ')} -f html -o spec/index.html -f CI::Reporter::RSpec"
+      end
+
+      desc "Cucumber for Jenkins"
+      task :features do
+        sh "bundle exec cucumber #{ds_env.cucumber_options.join(' ')} -f html -o features/index.html -f json -o features/result.json -f CI::Reporter::Cucumber"
+      end
+
+      desc "Clear caches and stuff"
+      task :clearset do
+        cachefile="coverage/.resultset.json"
+        FileUtils .rm cachefile if File.exists? cachefile
+      end
+
     end
   end
 end

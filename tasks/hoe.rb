@@ -26,16 +26,43 @@ ds_raker.configure(defaults: true) do |opt|
   [ "hoe-bundler", "~> 1.2" ],
   [ "yard" ],
   [ "redcarpet" ],
+  [ "rspec" ],
+  [ "cucumber" ],
+  [ "ci_reporter" ],
+  [ "simplecov-rcov" ],
   ]
   opt.license = "MIT"
+  opt.rspec_options = [ "--color", "--require", "rspec_helper.rb" ]
+  opt.cucumber_options = [ "" ]
 end
 
 ds_raker.assert_sanity
 
+# @todo care about `config/cucumber.yml` that could read:
+#     default: --tags ~@mail
+#     check: --format progress --tags ~@wip --tags ~@mail --strict
+#     mail: --tags @mail
+#     wip: --tags @wip
+
+# wrapper around {Hoe.spec} DRYing out things even further. *Mandatory call*
+def ds_hoe_spec(projectname, &block)
+  Hoe.spec(projectname) do
+    block.call(self)
+    self.rspec_options = ds_env.rspec_options
+    ds_env.dev_deps.each do |spec|
+      extra_dev_deps << spec
+    end
+    license ds_env.license
+    ds_env.yard_options.each do |opt|
+      self.yard_options += opt
+    end
+  end
+end
+
 # define tasks by hoe itself, giving nicer description string
 $LOAD_PATH << File.join([ File.dirname(__FILE__), 'hoe_plugins' ])
 Hoe.plugin :devsupport
-
 Hoe.plugin :yard
 Hoe.plugin :bundler
+
 
