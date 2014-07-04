@@ -2,12 +2,6 @@
 MEPATH=projects/devsupport
 PMPATH=pm-git/software/devsupport
 
-if [ -d ~/pm-git/config/.git ]; then
-	echo "INFO: with dotvim"
-	PAIRS="projects/dotvim:pm-git/config/puppet/modules/editors/files/dotvim"
-	CONFIGS="projects/dotvim pm-git/config"
-fi
-
 for i in tasks vim bin yard ; do
 	PAIRS="$PAIRS $MEPATH/$i:$PMPATH/$i"
 done
@@ -42,7 +36,7 @@ checkSanity()
 	test -r $PMPATH || exit 1
 
 	# just for sanity: update it
-	for i in projects/devsupport pm-git/software/devsupport $CONFIGS
+	for i in projects/devsupport pm-git/software/devsupport
 	do
 		echo "pulling $i"
 		cd $i || exit 2
