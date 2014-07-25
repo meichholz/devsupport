@@ -34,6 +34,7 @@ ds_raker.configure(defaults: true) do |opt|
   opt.license = "MIT"
   opt.rspec_options = [ "--color", "--require", "rspec_helper.rb" ]
   opt.cucumber_options = [ "" ]
+  opt.extra_files = [ ] # to go into manifest/package
 end
 
 ds_raker.assert_sanity

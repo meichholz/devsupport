@@ -6,6 +6,7 @@ module Hoe::DevSupport
     CLEAN.include "coverage", "emigma.log"
     CLEAN.include "features/result.json", "features/reports"
     CLOBBER.include "features/index.html"
+    CLOBBER.include "tags", "doc"
 
     namespace :ds do
       ds_tasks_for :common
@@ -18,7 +19,7 @@ module Hoe::DevSupport
         sh "chmod a+x #{ds_env.executable}"
       end
 
-      desc "Write new manifest"
+      desc "Rewrite manifest"
       task :manifest do
         files = [
           'README.md',
@@ -31,13 +32,22 @@ module Hoe::DevSupport
         ]
         Dir['bin/*'].each{|n| files << n }
         Dir['lib/**/*.rb'].each{|n| files << n }
+        ds_env.extra_files.each {|n| files << n }
         File.open("Manifest.txt", "w") do |f|
           files.each do |name|
-            puts name
             f.puts name
           end
         end
+        puts "#{files.count} files registered."
+        puts
+        puts "*Please* review Manifest.txt !!! for goodness sake!!!"
       end
+
+      desc "Show project"
+      task :tree => [ :clobber ] do
+        sh "tree -I devsupport"
+      end
+
     end
 
     desc "Rebuild TAGS"
