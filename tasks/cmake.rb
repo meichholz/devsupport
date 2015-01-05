@@ -37,8 +37,8 @@ def ds_post_configure
   version = nil
   if ds_env.gcc_versions
     ds_env.gcc_versions.each do |ver|
-      if system("g++-#{ver} --version >/dev/null")
-        puts "setting gcc-#{ver} as preferred compiler" if ds_env.debug_rake
+      if system("g++-#{ver} --version >/dev/null 2>&1")
+        puts "DEBUG: setting gcc-#{ver} as preferred compiler" if ds_env.debug_rake
         # CMAKE chooses the compiler through the environment
         version = ver
         break
