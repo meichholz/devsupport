@@ -147,7 +147,8 @@ module Devsupport
 
       def defaults
         {
-          editor: "gvim -geometry 88x55+495-5",
+          editor: ENV['DEV_EDITOR'] || "gvim -geometry 88x55+495-5",
+          ctags: ENV['DEV_CTAGS'] || "ctags -R --exclude=debian,pkg --Ruby-kinds=+f",
           devlocale: 'de_DE.UTF-8',
           devconf: 'development',
           terminal: ENV['DEV_TERMINAL'] || best_command(%w(terminal xfce4-terminal gnome-terminal xterm)),
@@ -160,6 +161,7 @@ module Devsupport
           rvm_only: false,
           base_path: base_path,
           yardoc_path: 'yard',
+          yard_options: [],
           startup_tasks: %w(clean edit),
           debug_rake: ENV['DEBUG_RAKE'] ? true : false,
           upstream_semaphore: 'dev_upstream',

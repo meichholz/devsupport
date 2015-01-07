@@ -12,7 +12,7 @@ module Hoe::DevSupport
       ds_tasks_for :common
       desc "Fix permissions"
       task :fixperm do
-        ds_opt.directories.each do |dir|
+        ds_env.directories.each do |dir|
           sh "find #{dir} -type d | xargs chmod 755"
           sh "find #{dir} -not -type d | xargs chmod 644"
         end
@@ -52,7 +52,7 @@ module Hoe::DevSupport
 
     desc "Rebuild TAGS"
     task :tags do
-      sh "ctags --Ruby-kinds=+f -R --exclude=debian,pkg"
+      sh ds_env.ctags
     end
 
     desc "Start edit and tagging"

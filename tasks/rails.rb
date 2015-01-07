@@ -52,7 +52,7 @@ namespace :dev do
 
   desc "Rebuild tags file"
   task :tags do
-    sh "ctags --Ruby-kinds=+f -R"
+    sh ds_env.ctags
   end
 
   desc "Start editor"

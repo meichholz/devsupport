@@ -45,7 +45,7 @@ end
 
 desc "Rebuild TAGS"
 task :tags do
-  sh "ctags --Ruby-kinds=+f -R --exclude=debian,pkg"
+  sh ds_env.ctags
 end
 
 desc "Start edit and tagging"
