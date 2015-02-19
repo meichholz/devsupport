@@ -36,8 +36,9 @@ end
 
 task :default => :check
 
-CLOBBER.include "configure"
-CLEAN.include "build-aux", "autom4te*", "aclocal.m4", "m4"
+# it is *extremely* important to leave the configure stuff during "rake clean"
+CLOBBER.include "configure", "build-aux", "autom4te*", "aclocal.m4", "m4"
+# "rake clean" may remove just noise
 CLEAN.include "cscope.out", "doxygen", "sloc.sc"
 CLEAN.include "**/.deps"
 if File.exists? 'Makefile.am'
