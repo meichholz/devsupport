@@ -1,0 +1,11 @@
+{
+  "*": {"make": ["rake", "-f", "{project}/Rakefile"]},
+  "src/*.cc": {"type": "code",
+	  "alternate": "src/{}.h" },
+  "src/*.h": {"type": "header",
+  	"alternate": "src/{}.cc"},
+  "tests/unit/test_*.cc": {"type": "unit",
+  	"alternate": "src/{}.cc" },
+  "spec/*_spec.rb": {"dispatch": ["rspec", "{file}"],
+  	"alternate": "lib/emigma/{}.rb" },
+}

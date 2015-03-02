@@ -81,8 +81,10 @@ endfunction
 function! L_Rake(mode) "{{{
   wall
 	set makeprg=rake
+	compiler gcc
 	execute "make! ".a:mode
 	copen
+
 endfunction
 " }}}
 function! s:editJumpToFirstInList(type, searchcore, candidates) "{{{

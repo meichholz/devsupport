@@ -147,7 +147,7 @@ module Devsupport
 
       def defaults
         {
-          editor: ENV['DEV_EDITOR'] || "gvim -geometry 88x55+495-5",
+          editor: ENV['DEV_EDITOR'] || "gvim -geometry 88x55", # "+495-5",
           ctags: ENV['DEV_CTAGS'] || "ctags -R --exclude=debian,pkg --Ruby-kinds=+f",
           devlocale: 'de_DE.UTF-8',
           devconf: 'development',

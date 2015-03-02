@@ -1,0 +1,16 @@
+{
+  "*": {"make": ["rake", "-f", "{project}/Rakefile"]},
+  "src/*.c": {"type": "code",
+          "alternate": "src/{}.h" },
+  "src/*.h": {"type": "header",
+        "alternate": "src/{}.c"},
+  "tests/unit/test_*.cc": {"type": "unit",
+        "alternate": "src/{}.c" },
+  "src/Makefile.am": {"type": "amcode",
+        "alternate": "tests/unit/Makefile.am" },
+  "tests/*/Makefile.am": { "type": "amtest",
+        "alternate": "src/Makefile.am" },
+  "configure.ac": { "type": "aconf",
+        "alternate": "Makefile.am" },
+}
+

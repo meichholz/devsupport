@@ -69,7 +69,7 @@ desc "rebuild configure script, needs an existing configure script"
 task :reconf => [ "configure" ]
 
 task :check => [ "Makefile" ] do
-  sh "make #{ds_env.make_options} check"
+  sh "make #{ds_env.make_options} VERBOSE=1 check"
 end
 
 task :cleancheck => [ "configure" ] do
