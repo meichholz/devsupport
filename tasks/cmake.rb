@@ -12,14 +12,13 @@ end
 
 ds_configure(defaults: true) do |c|
   c.appname = appname
+  c.root_dir = Dir.pwd
   c.build_dir = 'build_dir'
   c.executable = File.join("src", appname)
   c.cmake_base_options = "-DCMAKE_INSTALL_PREFIX:PATH=/usr"
   c.cmake_options = nil
   c.make_bin = "make"
   c.concurrency = 4
-  c.root_dir = Dir.pwd
-  c.build_dir = "build_dir"
   c.frontend = c.executable
   c.features="tests/features"
   c.gcovr_exclude = '^googletest'
@@ -52,8 +51,8 @@ def ds_post_configure
   end
   ds_configure(defaults: true) do |c|
     c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency}"
-    c.gcovr_bin = version ? "gcov-#{version}" : "gcov"
-    c.gcovr_opt = "--gcov-executable=#{c.gcovr_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
+    c.gcov_bin = version ? "gcov-#{version}" : "gcov"
+    c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
     c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
   end
   if ds_env.debug_rake
