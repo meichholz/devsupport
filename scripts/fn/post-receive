@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+require "fileutils"
+
+filename="reception.#{Process.pid}"
+
+puts "writing to #{filename}"
+File.open filename, "w" do |f|
+  STDIN.each_line do |l|
+    f.puts l
+  end
+end
+
+puts "starting post reception hooks"
+Dir.glob("hooks/post-receive-*").find_all{ |name| name =~ /post-receive-[a-z]+$/ }.each do |backend|
+  puts "calling #{backend} on #{filename}"
+  system "#{backend} < #{filename}"
+end
+
+FileUtils.rm filename
+
+

@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+require "cgi"
+
+while (input = STDIN.read) != ''
+   rev_old, rev_new, ref = input.split(" ")
+   if ref == "refs/heads/master"
+     git_url="ssh://git@git.freenet.de#{Dir.pwd}"
+     puts "using #{git_url} as git url"
+     system "curl", "-sS", "http://jenkins.freenet.de/git/notifyCommit?url=#{CGI.escape git_url}"
+   end
+end
+
