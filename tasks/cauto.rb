@@ -78,7 +78,7 @@ CLEAN.include "**/.deps"
 CLOBBER.include 'configure', 'build-aux', 'autom4te*', 'aclocal.m4', 'm4'
 
 if File.exists? 'Makefile.am'
-  CLOBBER.include '**/Makefile.in'
+  CLOBBER.include '**/Makefile.in', '**/Makefile'
 end
 
 CLOBBER.include '**/*.gcda', '**/*.gcno',
@@ -128,9 +128,8 @@ task :check => [ :debugenv, "Makefile" ] do
   sh "make #{ds_env.make_options} VERBOSE=1 check"
 end
 
-desc "Make distclean and run check"
-task :cleancheck => [ "configure" ] do
-  sh "make #{ds_env.make_options} distclean" if File.exists?("Makefile")
+desc "Remake with current configure, run clean check"
+task :cleancheck => [ "configure", :tidyup ] do
   Rake::Task[:run_configure].invoke
   sh "make #{ds_env.make_options} check"
 end
@@ -138,8 +137,10 @@ end
 desc "Safely remove all generated stuff by make and rules"
 task :tidyup do
   # do not let fail these tasks
-  system 'fakeroot ./debian/rules clean' if File.exists? 'debian/rules'
-  system 'fakeroot make distclean' if File.exists? 'Makefile'
+  if File.exists? 'Makefile'
+    `fakeroot make clean`
+    `fakeroot make distclean`
+  end
   Rake::Task[:clean].invoke
 end
 
@@ -154,7 +155,8 @@ task :bootstrap => [ :clobber, "m4" ] do
 end
 
 desc "Build or rebuild debian package"
-task :package => :clean do
+task :package => [ :tidyup, 'debian/rules' ] do
+  system 'fakeroot ./debian/rules clean' if File.exists? 'debian/rules'
   sh "fakeroot ./debian/rules binary"
 end
 
