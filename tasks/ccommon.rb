@@ -5,25 +5,57 @@
 # - in place our build_dir building
 # - C++ or C
 
+ENV['GTEST_COLOR'] ='yes'
+
 namespace :ds do
   ds_tasks_for :common
 end
 
 ds_configure(defaults: true) do |c|
-  c.debug_semaphore = 'dev_debug'
+  c.root_dir = Dir.pwd
+  c.debug_semaphore = 'dev_debug' # debug the SUT, not the rake framework itself :-)
+  # preset standard file layout
   c.sourcedir = 'src'
   c.sourcedirs = [ c.sourcedir, 'tests' ]
+  c.features = 'tests/features'
+  c.scopefiles = Dir['src/**/*.[ch]*', 'tests/unit/*.[ch]*'].join(' ')
+  c.frontend = c.executable
+  # preset making options and tooling
+  c.make_options = '--silent'
+  c.gcc_versions = nil
   c.cflags = '-g'
   c.debug_cflags = '-O0 -fPIC -ftest-coverage -fprofile-arcs'
+  c.concurrency = 4 # used on parallel make support
   c.gcovr_exclude = '^gtest'
   c.gcovr_bin = 'devsupport/bin/gcovr'
-  c.scopefiles = Dir['src/**/*.[ch]*', 'tests/unit/*.[ch]*'].join(' ')
-  c.make_options = '--silent'
+  c.make_bin = 'make'
 end
 
 
 def ds_ccommon_post_configure
+  @debug_mode = File.exists?(ds_env.debug_semaphore) || ENV['DEV_DEBUGMODE']
+
+  version = nil
+  # find suitable compiler version, needed for CMAKE and C++11
+  if ds_env.gcc_versions
+    ds_env.gcc_versions.each do |ver|
+      if system("g++-#{ver} --version >/dev/null 2>&1")
+        puts "DEBUG: setting gcc-#{ver} as preferred compiler" if ds_env.debug_rake
+        version = ver
+        break
+      end
+    end
+  end
+  # make results available to CMAKE
+  if version
+    ENV["CXX"] = "g++-#{version}"
+    ENV["CC"]  = "gcc-#{version}"
+    ENV["GCOV"]  = "gcov-#{version}"
+  end
+  # abstract away some other glue settings as kind of macros
   ds_configure(defaults: true) do |c|
+    c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency}"
+    c.gcov_bin = version ? "gcov-#{version}" : "gcov"
     c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
     c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
     c.builddirs.each do |tree|
@@ -36,8 +68,6 @@ def ds_ccommon_post_configure
 end
 
 task :default => :check
-
-@debug_mode = File.exists?(ds_env.debug_semaphore) || ENV['DEV_DEBUGMODE']
 
 desc 'Use environment for debugging (internal, chainable)'
 task :debugenv do
@@ -152,4 +182,26 @@ namespace :ci do
 
 end
 
+namespace :test do
+  desc "run ds_env.frontend program through valgrind"
+  task :grind => 'build' do
+    Dir.chdir ds_env.build_dir do
+      system "valgrind --leak-check=full --show-reachable=yes #{ds_env.frontend} #{ds_env.run_arguments}"
+    end
+  end
+
+  desc "run cucumber"
+  task :cucumber => 'build' do
+    Dir.chdir "#{ds_env.build_dir}/#{ds_env.features}" do
+      sh "cucumber #{ds_env.root_dir}/#{ds_env.features}"
+    end
+  end
+
+  desc "run all tests"
+  task :suite => 'build' do
+    Dir.chdir ds_env.build_dir do
+      system("#{ds_env.make_bin} VERBOSE=1 test")
+    end 
+  end
+end
 
