@@ -97,6 +97,12 @@ end
 
 task :clobber => :tidyup
 
+desc "Force a fast cleanup"
+task :fastclobber do
+  FileUtils.rm 'Makefile' if File.exists? 'Makefile'
+  Rake::Task[:tidyup].invoke
+end
+
 desc "Bootstrap everything"
 task :bootstrap => [ :clobber, "m4" ] do
   sh 'autoreconf --force --verbose --install'

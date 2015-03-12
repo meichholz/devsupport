@@ -5,7 +5,7 @@
 # - in place our build_dir building
 # - C++ or C
 
-ENV['GTEST_COLOR'] ='yes'
+ENV['GTEST_COLOR'] = 'auto'
 
 namespace :ds do
   ds_tasks_for :common
@@ -138,7 +138,9 @@ namespace :cov do
 
   desc "run the SUT, producing coverage data"
   task :run => 'check' do
-    output="#{ds_env.build_dir}/tests/unit/reports/"
+    output="#{ds_env.build_dir}/tests/unit/reports/" # @TODO: put output to config, or compute fom Sut(s)
+    # todo: run group of testprograms, inferred from config
+    ENV['GTEST_COLOR'] = 'no'
     sh "#{ds_env.sut} --gtest_output=xml:#{output}"
   end
 
