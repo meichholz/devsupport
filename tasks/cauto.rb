@@ -31,7 +31,7 @@ ds_configure(defaults: true) do |c|
   c.executable = FileList.new("#{c.sourcedir}/#{c.appname}")[0].to_s
   c.frontend = "#{c.sourcedir}/#{c.appname}"
   c.editfiles = FileList.new '**/Makefile.am', 'configure.ac'
-  c.scopefiles = FileList.new '**/*.c*', '**/*.h', '**/*.sh'
+  c.scopefiles = FileList.new "#{c.sourcedir}/**/*.c*", "#{c.sourcedir}/**/*.h"
   c.automakefiles = FileList.new '**/*.am'
 end
 
