@@ -19,6 +19,7 @@ ds_configure(defaults: true) do |c|
   c.sourcedirs = [ c.sourcedir, 'tests' ]
   c.features = 'tests/features'
   c.scopefiles = Dir['src/**/*.[ch]*', 'tests/unit/*.[ch]*'].join(' ')
+  # todo: run group of testprograms, inferred from config
   c.frontend = c.executable
   # preset making options and tooling
   c.make_options = '--silent'
@@ -34,7 +35,6 @@ end
 
 def ds_ccommon_post_configure
   @debug_mode = File.exists?(ds_env.debug_semaphore) || ENV['DEV_DEBUGMODE']
-
   version = nil
   # find suitable compiler version, needed for CMAKE and C++11
   if ds_env.gcc_versions
@@ -54,6 +54,7 @@ def ds_ccommon_post_configure
   end
   # abstract away some other glue settings as kind of macros
   ds_configure(defaults: true) do |c|
+    c.ci_suite_arguments = "--gtest-options=xml:#{ds_env.build_dir}/tests/unit/reports/"
     c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency}"
     c.gcov_bin = version ? "gcov-#{version}" : "gcov"
     c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
@@ -138,10 +139,8 @@ namespace :cov do
 
   desc "run the SUT, producing coverage data"
   task :run => 'check' do
-    output="#{ds_env.build_dir}/tests/unit/reports/" # @TODO: put output to config, or compute fom Sut(s)
-    # todo: run group of testprograms, inferred from config
     ENV['GTEST_COLOR'] = 'no'
-    sh "#{ds_env.sut} --gtest_output=xml:#{output}"
+    sh "#{ds_env.sut} #{ds_env.ci_suite_arguments}"
   end
 
   desc "Generate HTML coverage report"
