@@ -27,7 +27,7 @@ ds_configure(defaults: true) do |c|
   c.cflags = '-g'
   c.debug_cflags = '-O0 -fPIC -ftest-coverage -fprofile-arcs'
   c.concurrency = 4 # used on parallel make support
-  c.gcovr_exclude = '^gtest'
+  c.gcovr_exclude = '^3rdparty'
   c.gcovr_bin = 'devsupport/bin/gcovr'
   c.make_bin = 'make'
 end
@@ -89,8 +89,8 @@ CLOBBER.include '**/*.gcda', '**/*.gcno',
   'doc'
 
 # inhibit removal of testing libraries
-CLEAN.exclude 'gtest/**/*', 'devsupport/**/*'
-CLOBBER.exclude 'gtest/**/*', 'devsupport/**/*'
+CLEAN.exclude '3rdparty/**/*', 'devsupport/**/*'
+CLOBBER.exclude '3rdparty/**/*', 'devsupport/**/*'
 
 desc "Rebuild tag file"
 task :tags do

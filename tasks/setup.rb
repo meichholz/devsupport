@@ -23,6 +23,9 @@ module Devsupport
     def ds_termsh(*command)
       Devsupport::Rake.sh_in_terminal(wait: false, cmd: command)
     end
+    def ds_conclude
+      ::Rake::Task['ds:conclude'].invoke
+    end
   end
 
   class Rake

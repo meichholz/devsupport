@@ -35,7 +35,7 @@ ds_configure(defaults: true) do |c|
   c.automakefiles = FileList.new '**/*.am'
 end
 
-def ds_post_configure
+task 'ds:conclude' do
   ds_configure(defaults: true) do |c|
     c.gcov_bin='gcov'
   end

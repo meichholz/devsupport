@@ -29,3 +29,8 @@ task :env do
   end
 end
 
+desc "Conclude environment details from user setup"
+task :conclude do
+end
+
+
