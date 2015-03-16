@@ -36,10 +36,10 @@ module Devsupport
       end
       Dir.chdir todir do
         puts "now building #{name}"
+        ENV['GMOCK_HOME']=File.join(@build_dir, 'gmock')
         sh "autoreconf --install"
-        sh "./configure --prefix=#{@install_dir} --with-gnu-ld --enable-static --disable-shared"
+        sh "./configure --prefix=#{@install_dir} --enable-static --disable-shared --disable-dependency-tracking --enable-silent-rules --enable-generate-map-file"
         sh "make"
-        sh "make extensions"
         sh "make install"
       end
     end
@@ -59,8 +59,16 @@ module Devsupport
       Dir.chdir todir do
         puts "now building #{name}"
         sh "autoreconf --install"
-        sh "./configure --with-gnu-ld --enable-static --disable-shared --disable-dependency-tracking"
+        sh "./configure --enable-static --disable-shared --disable-dependency-tracking"
         sh "make" # NO install, see Gmock README
+        Dir['lib/*.la', 'lib/.libs/*.la'].each do |lafile|
+          puts "INFO: Tidying away #{lafile} in #{todir}"
+          FileUtils.rm_f lafile # remove problematic .la file versions
+        end
+        Dir['lib/.libs/*.a'].each do |afile|
+          puts "INFO: Symlinking #{afile} in #{todir}"
+          FileUtils.ln_s afile, '.'
+        end
         # TODO: Manually install symlinks for libraries and headers
       end
     end
@@ -94,6 +102,7 @@ namespace :build do
     builder = Devsupport::LibraryBuilder.new
     builder.prepare
     builder.build_googletest :gmock, '1.7.0'
+    builder.build_googletest :gtest, '1.7.0'
     builder.build_googletest :gtest, '1.7.0', inside: true
     builder.build_cpputest '3.6'
   end

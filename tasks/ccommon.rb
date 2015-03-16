@@ -89,8 +89,10 @@ CLOBBER.include '**/*.gcda', '**/*.gcno',
   'doc'
 
 # inhibit removal of testing libraries
-CLEAN.exclude '3rdparty/**/*', 'devsupport/**/*'
-CLOBBER.exclude '3rdparty/**/*', 'devsupport/**/*'
+[ 'lib', '3rdparty', 'devsupport'].each do |tree|
+  CLEAN.exclude "#{tree}/**/*"
+  CLOBBER.exclude "#{tree}/**/*"
+end
 
 desc "Rebuild tag file"
 task :tags do
