@@ -54,7 +54,13 @@ Some of this integration **is really brittle** or stubby. So use is for insprira
 
 ## Usage as submodule
 
-The canonical usage is inclusion as *git submodule* by the very same name.
+The canonical usage is inclusion as *git submodule* by the very same name. Somewhat like this:
+
+```
+git submodule add https://github.com/meichholz/devsupport.git trunk/devsupport
+git submodule init
+git submodule update
+```
 
 ## The basic Meta Structure
 
@@ -72,7 +78,19 @@ This ist mostly for the choice of the local **BROWSER**, the **EDITOR**, or debu
 
 ## Upstreaming or Submodules
 
-TODO.
+The "upstream mode" is maintainer behaviour.
+
+``rake ds:upstream`` will switch to a reloading mechanism, that will try to
+reload the devsupport package from a sibling sandbox (like ``../../devsupport``
+or ``../devsupport``). This is really useful to co-develop local projects and
+devsupport helper, or to test drive devsupport (or simply to fix it).
+
+``rake ds:pull`` instead will try to re-checkout the submodules (namely:
+devsupport) from their currect HEAD, and it will end "upstream mode" by
+clearing the semaphore file.
+
+Pulling normally ends a devsupport maintenence cycle and allows to test drive
+the project Rakefile with the "real" submodule head.
 
 ## About the project-environment object
 
@@ -91,7 +109,7 @@ This is the normal way to setup the project.
 
 ```
 ds_configure.do |c|
-  c.editfiles = [ 'README.md' ]
+  c.run_arguments = '-V'
 end
 ```
 
@@ -118,9 +136,19 @@ THINK: Probably ther Environment is a better choice to pass PRE-Setup-Choices.
 
 ## Build of project specific tool chains or libraries
 
-Just one word: Google Mock and CppUTest, or the GPerfTools.
+Just one word: Google Mock and CppUTest. We have some "Builder" objects to
+build just these critical stuff. Another candidate are the **GPerfTools** for
+the **tcmalloc** library.
 
 TODO.
+
+## CI/Jenkins support
+
+### GCOV and gcovr
+
+As it comes to code coverage, GNU has pretty much support, as long as You don't optimize Your code, and let it be instrumented. Unfortunately, the profiling data must be converted to the jenkins plugin format.
+
+That Job is done by ``gcovr``, which we have inside this repo as a copy.
 
 ## Examples
 
@@ -134,15 +162,61 @@ TODO.
 
 ### GNU Autoconf based C/C++ project
 
-TODO.
+This complete(!) Rakefile is taken from a current project. 
+
+```
+load "devsupport/tasks/setup.rb"
+
+ds_configure do |c|
+  c.debug_configure_options = ""
+  c.configure_options = ['--prefix=/usr',
+                         '--with-gtest', '--with-gmock', '--with-cpputest',
+                         '--without-gperftools',
+                         ].join(' ')
+  c.ci_suite_arguments = "-ojunit"
+  c.gcovr_exclude = '(^(3rdparty|gtest)|(.*(CppUTest|UtestPlatform).*))'
+  c.run_arguments = '-V'
+  c.make_options = "--silent"
+end
+
+CLEAN.include "cpputest_*.xml"
+
+ds_tasks_for :cauto
+ds_tasks_for :devlibs
+ds_conclude
+
+task :bootstrap => ['build:devlibs']
+```
 
 ### CMAKE based C++ project
 
-TODO.
+```
+ds_tasks_for :cmake
+ds_tasks_for :devlibs
+
+ds_conclude
+```
+
+### Ruby on Rails project
+
+``ds_tasks:for :rails``
 
 ## Suggested Vim integration
 
-TODO.
+We have some VIM setup files in the **vim** directory. You can have a **local.vim** file with something like the following redirection in it:
+
+```
+source devsupport/vim/local_c.vim
+let g:L_cext="c"
+let g:L_cdotext=".c"
+```
+
+After all You are assumed to have the [Dotvim
+package](https://github.com/meichholz/dotv) integrated some way.
+
+The integration files will most of the time leave support stuff to Vim modules
+by Tim Pope :-)
+
 
 ## License
 
