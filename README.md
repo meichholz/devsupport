@@ -128,7 +128,19 @@ TODO.
 
 TODO.
 
-### GNU Autoconf based project
+### Simple Ruby project
+
+TODO.
+
+### GNU Autoconf based C/C++ project
+
+TODO.
+
+### CMAKE based C++ project
+
+TODO.
+
+## Suggested Vim integration
 
 TODO.
 
