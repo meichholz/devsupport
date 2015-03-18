@@ -18,7 +18,7 @@ task :yardopt do
 EOM
   f.puts '-e '+File.dirname(__FILE__)+'/yard/standard/plugin.rb'
   f.puts <<EOM
-tasks/**/*.rb
+tasks/**.rb
 EOM
   end
 end
