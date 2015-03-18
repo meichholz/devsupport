@@ -4,10 +4,7 @@
 # * cpputest
 # * gperftools
 #
-#@TODO
-##Issues
-# * gtest configure-make depends on system python being version 2.x
-#
+#@todo gtest configure-make depends on system python being version 2.x
 
 ds_configure(defaults: true) do |c|
   c.devlib_sourcedir = '3rdparty'
@@ -17,11 +14,14 @@ end
 
 module Devsupport
 
+  # This is a virtual base class implementing the common behaviour of library and
+  # tool builders.
   class LibraryBuilder
     include ::Rake::DSL
 
     def initialize(options={})
       # this massive state is due to old procedural attempts.
+      # @todo The global parameters should go to some shared instance, like the {BuildJanitor}
       # refactor at will ;-)
       @build_dir = Rake.options.devlib_builddir
       @install_dir = Rake.options.devlib_installdir
@@ -32,42 +32,53 @@ module Devsupport
     end
 
     # get the source files, if needed
+    # @return [void]
     def prepare
     end
 
     # build the library and install it
+    # @return [void]
     def build
       raise "build not implemented in base class"
     end
 
-    # clean up the mess, if suitable
+    # clean up no longer used local artifacts after build, if suitable
+    # @return [void]
     def cleanup
     end
 
     # clobber away, normally left out
+    # @return [void]
     def clobber
     end
 
     protected
 
+    # @return [String] the location of the 3rdparty-submodule subdirectory
     def repo_dir
       "#{@source_dir}/#{@name}-#{@version}/."
     end
 
+    # @return [String] the specific build-directory. '''The naming is bad!'''
     def sandbox_dir
       "#{@build_dir}/#{@name}"
     end
 
     # hook: setup the builder object, post-constructor
+    # @return [Void]
     def setup(options={}) # hook
     end
     
+    # Just a helper to copy over (or construct link farm) for the local build directory
     def self.copy_sources(fromdir, todir)
       puts "ds: copy devlib source from #{fromdir} to #{todir}"
       FileUtils.cp_r fromdir, todir
     end
   end
 
+  # The Janitor is a helper class to to the global stuff before and after the
+  # specifical Builders. In fact it prepares the file system and purges all artifacts away.
+  # @todo Probably it should keep the global parameters
   class BuildJanitor < LibraryBuilder
     def prepare
       FileUtils.mkdir @build_dir unless File.exists? @build_dir
@@ -104,7 +115,8 @@ module Devsupport
       self.class.copy_sources(repo_dir, sandbox_dir) unless File.exists? sandbox_dir or @opt_inside
     end
 
-    # @returns [void]
+    # Build library and install it
+    # @return [void]
     def build
       if File.exists? File.join(sandbox_dir, 'lib', '.libs', "lib#{@name}.a")
         puts "skipping: #{@name} built"
@@ -142,7 +154,8 @@ module Devsupport
       self.class.copy_sources(repo_dir, sandbox_dir) unless File.exists? sandbox_dir
     end
 
-    # @returns [void]
+    # @see [LibraryBuilder#build]
+    # @return [void]
     def build
       if File.exists? File.join(@install_dir, 'lib', 'libCppUTestExt.a')
         puts "skipping: #{@name} built"

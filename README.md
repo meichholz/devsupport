@@ -1,10 +1,32 @@
 # Devsupport
 
-This is a stub. Do not shoot me!
+This code is my more or less personal, but extendable way to manage **maintainer mode** in our various projects.
 
-## Intention
+The goal is to set up a mostly **uniform build and test** way comprising all aspects of
 
-This sub project is mostly private and it is on GitHub primarily to get accustomed to GitHub itself.
+* Editing with Vim
+* Building
+* Test Driving
+* TDD and BDD
+* Documentation
+* Packaging
+* Factoring out Submodules
+
+The resulting Boilerplate for each specific project should be **next to nil** or at least as unchanging as possible allowing to re-visit hibernating projects, when needed.
+
+Or in another way: **Frustration free building** as platform and host independent as **affordable**.
+
+It ist **no attempt at over-engineering** and **no claim on perfectness**.
+
+## Inside documentation
+
+Please see the included self-documentation by ``rake doc:view``. You need
+``Yard`` for that job, and probably some browser in ``ENV['BROWSER']``.
+
+When visiting in Jenkins, please check out the [Class List](class_list.html)
+for a start.
+
+* [Open Tasks](_todolist.html)
 
 ## Glue code for development tasks
 
@@ -33,6 +55,82 @@ Some of this integration **is really brittle** or stubby. So use is for insprira
 ## Usage as submodule
 
 The canonical usage is inclusion as *git submodule* by the very same name.
+
+## The basic Meta Structure
+
+Mostly, You will need a suitable ``Rakefile``. It will do some basic steps:
+
+1. Setup the Devsupport machinery
+1. Setup Variables that cannot be or are not preset
+1. Load presets for this specific project type
+1. Wire some default tasks
+1. Define additional tasks or overload them like in every Rakefile.
+
+Plus, there is at least *some* tuning possibility by the environment variables or semaphore files. This is to allow co-maintainers to share the Rakefile but have at least some choices, where the Devsupport-Guesser cannot act on their behalf.
+
+This ist mostly for the choice of the local **BROWSER**, the **EDITOR**, or debugging mode(s).
+
+## Upstreaming or Submodules
+
+TODO.
+
+## About the project-environment object
+
+Note: The accessors are normally unmutable. That is, You can *override* it, but
+You cannot - for example - append a string simply.
+
+### Defaults
+
+TODO.
+
+Defaults are configured not by the User project, but by the Task set.
+
+### User Configuration.
+
+This is the normal way to setup the project.
+
+```
+ds_configure.do |c|
+  c.editfiles = [ 'README.md' ]
+end
+```
+
+TODO.
+
+### Hoe configuration
+
+Since HOE already does *some* things that Devsupports do (with other focus and means), the typical Ruby project has a Setup at the Hoe side, and - even worse - a configuration of the Hoe integration we do here.
+
+Again: The Goal is **reduction of boilerplate** and even Hoe cannot do without, so all we do here is to abstract away resulting boilerplate and leave at least some aspects ... configurable.
+
+TODO.
+
+### Conclusions
+
+If Settings must inferred on project specific settings, which really **should**
+be avoided, like a list of suitable compiler versions, or tools not fed through
+the environment, some sort of post-configuration (or "conclusions") must be
+applied.
+
+TODO.
+
+THINK: Probably ther Environment is a better choice to pass PRE-Setup-Choices.
+
+## Build of project specific tool chains or libraries
+
+Just one word: Google Mock and CppUTest, or the GPerfTools.
+
+TODO.
+
+## Examples
+
+### Hoe based project
+
+TODO.
+
+### GNU Autoconf based project
+
+TODO.
 
 ## License
 

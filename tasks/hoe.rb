@@ -45,7 +45,7 @@ ds_raker.assert_sanity
 #     mail: --tags @mail
 #     wip: --tags @wip
 
-# wrapper around {Hoe.spec} DRYing out things even further. *Mandatory call*
+# wrapper around `Hoe.spec` DRYing out things even further. *Mandatory call*
 def ds_hoe_spec(projectname, &block)
   Hoe.spec(projectname) do
     block.call(self)
