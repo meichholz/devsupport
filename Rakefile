@@ -6,7 +6,8 @@ end
 
 ds_tasks_for :ruby
 
-task :yardopt do
+# @todo factor this out with the implementation of the Hoe plugin
+file '.yardopts' do
   File.open(File.dirname(__FILE__)+"/.yardopts", "w") do |f|
     f.puts <<EOM
 --markup=markdown
@@ -23,5 +24,6 @@ EOM
   end
 end
 
-task 'doc:build' => [ :yardopt ]
+# TODO: Diese "nachgelagerte" Dependency scheint nicht rechtzeitig zu feuern.
+task 'doc:yard' => [ '.yardopts' ]
 
