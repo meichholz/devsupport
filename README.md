@@ -33,6 +33,12 @@ The documentation can be build by a ``rake doc:view``.
   <td><a href="file.History.html">local</a></td>
 </table>
 
+## Known bugs
+
+### Yard and @alltodos
+
+The Yard addon has a bug and will crash yard, if there is no ``@alltodos`` tag within the sources. This should be fixed, of course.
+
 ## Goals
 
 The goal is to set up a mostly **uniform build and test** way with **as little
