@@ -10,12 +10,14 @@ ds_tasks_for :ruby
 file '.yardopts' do
   File.open(File.dirname(__FILE__)+"/.yardopts", "w") do |f|
     f.puts <<EOM
+--markup-provider=redcarpet
 --markup=markdown
 --main=README.md
 --protected
 --private
 --hide-void-return
 --default-return Unknown
+--files=*.md
 EOM
   f.puts '-e '+File.dirname(__FILE__)+'/yard/standard/plugin.rb'
   f.puts <<EOM
