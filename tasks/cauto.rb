@@ -30,11 +30,75 @@ ds_configure(defaults: true) do |c|
   c.appname = appname
   c.executable = FileList.new("#{c.sourcedir}/#{c.appname}")[0].to_s
   c.frontend = "#{c.sourcedir}/#{c.appname}"
-  c.editfiles = FileList.new '**/Makefile.am', 'configure.ac'
+  c.editfiles = FileList.new 'configure.ac', "#{c.sourcedir}/**/Makefile.am", 'tests/**/Makefile.am'
   c.scopefiles = FileList.new "#{c.sourcedir}/**/*.c*", "#{c.sourcedir}/**/*.h"
   c.automakefiles = FileList.new '**/*.am'
 end
 
+module Devsupport
+
+  # within the Utils class, supporting methods can be defined as class methods
+  class Utils
+    class << self
+
+      # @return [String] the first version value found in debian/changelog.
+      def version_from_debian_changelog
+        File.open("debian/changelog", "r").each_line do |line|
+          if line=~/ \(([\d\.\-]+)\) /
+            return $1
+          end 
+        end
+        return nil
+      end
+
+      # this friendly helper does some things at once (yes, SRP alert)
+      # - it extracts the authoritative debian changelog version
+      # - it patches each given file by **overwriting** the existing value(s)
+      #   - For a `README.h` it will replace the ``@version`` tag argument
+      #   - for `configure.ac` it will replace the ``AC_INIT`` version parameter
+      #
+      # Probably the patching can be extracted as a block argument to a generic
+      # file patcher, and a type/pattern aware driver calls the suitable patcher
+      # for a `specific` file.
+      #
+      # @param [Array<String>] files the patchable files with path
+      def patch_version_tags(*files)
+        new_version = self.version_from_debian_changelog
+        return true unless new_version
+        STDOUT.puts "info: setting version #{new_version} in #{files.join(' ')}"
+        files.each do |mname|
+          File.open("#{mname}", "r") do |fromfile|
+            is_modified = false
+            File.open("#{mname}.new", "w") do |tofile|
+              puts "updating #{mname}"
+              fromfile.each do |line|
+                oline = line.clone
+                if line.match(/^AC_INIT\(/)
+                  line.gsub!(/\[[\d\.-]+\]/, "[#{new_version}]")
+                end
+                if line.match(/^@version /)
+                  line.gsub!(/^@version [\d\.-]+/,"@version #{new_version}")
+                end
+                if oline!=line
+                  is_modified = true;
+                  puts "#{mname} : #{line}"
+                end
+                tofile.puts line
+              end
+            end
+            if is_modified
+              FileUtils.mv "#{mname}.new", mname
+            else
+              FileUtils.rm "#{mname}.new"
+            end
+          end
+        end
+      end
+    end
+  end
+end
+
+# @todo that mechanism is brittle and should be replaced by something cleaner...
 task 'ds:conclude' do
   ds_configure(defaults: true) do |c|
     c.gcov_bin='gcov'
@@ -72,7 +136,12 @@ file "Makefile" => [ "configure" ] do
 end
 
 desc "Rebuild configure script, needs configure present"
-task :reconf => [ "configure" ]
+task :reconf => [ :fix_version, :configure ]
+
+desc "Paste version tag from debian changelog"
+task :fix_version do
+  Devsupport::Utils.patch_version_tags 'configure.ac', 'src/README.h'
+end
 
 desc "Run test suite"
 task :check => [ :debugenv, "Makefile" ] do
