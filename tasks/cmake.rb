@@ -1,71 +1,46 @@
-ds_tasks_for :common
+# this task bundle assumes
+# - CMakeLists.txt
+# - build in "build_dir"
+# - source inside "src"
+# - tests in "tests"
+#
+# Full debug build: rake clobber ds:test:on build
 
-appname = nil
-FileList.new(["**/CMakeLists.txt"]).each do |fitem|
-  File.open fitem, "rb" do |f|
-    f.each_line do |l|
-      m = l.match(/^install\s*\(TARGETS (\w+) DESTINATION bin\)/)
-      appname ||= m[1] if m
-    end
-  end
-end
+ds_tasks_for :ccommon
 
-ds_configure(defaults: true) do |c|
-  c.appname = appname
-  c.root_dir = Dir.pwd
-  c.build_dir = 'build_dir'
-  c.executable = File.join("src", appname)
-  c.cmake_base_options = "-DCMAKE_INSTALL_PREFIX:PATH=/usr"
-  c.cmake_options = nil
-  c.make_bin = "make"
-  c.concurrency = 4
-  c.frontend = c.executable
-  c.features="tests/features"
-  c.gcovr_exclude = '^googletest'
-  c.gcovr_bin = "devsupport/bin/gcovr"
-  c.editfiles = FileList.new("**/CMakeLists.txt",
-                            "src/*.c*", "README*" )
-  c.scopefiles = FileList.new("src/**/*.c*", "src/**/*.h",
-                              "tests/**/*.c*", "tests/**/*.h",
-                              "tests/**/*.sh")
-  c.gcc_versions = nil
-  # do NOT preset c.sut without any need!
-end
-
-def ds_post_configure
-  version = nil
-  if ds_env.gcc_versions
-    ds_env.gcc_versions.each do |ver|
-      if system("g++-#{ver} --version >/dev/null 2>&1")
-        puts "DEBUG: setting gcc-#{ver} as preferred compiler" if ds_env.debug_rake
-        # CMAKE chooses the compiler through the environment
-        version = ver
-        break
+def get_appname
+  appname = nil
+  FileList.new(["**/CMakeLists.txt"]).each do |fitem|
+    File.open fitem, "rb" do |f|
+      f.each_line do |l|
+        m = l.match(/^install\s*\(TARGETS (\w+) DESTINATION bin\)/)
+        appname ||= m[1] if m
       end
     end
   end
-  if version
-    ENV["CXX"] = "g++-#{version}"
-    ENV["CC"]  = "gcc-#{version}"
-    ENV["GCOV"]  = "gcov-#{version}"
-  end
-  ds_configure(defaults: true) do |c|
-    c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency}"
-    c.gcov_bin = version ? "gcov-#{version}" : "gcov"
-    c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
-    c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
-  end
-  if ds_env.debug_rake
-    puts "DEBUG: build_dir is #{ds_env.build_dir}"
-    puts "DEBUG: root_dir is #{ds_env.root_dir}"
-    puts "DEBUG: gcc-version is #{version}"
-  end
+  appname
 end
 
+@appname = get_appname
 
-CLEAN.include "t", "tt*", "*~"
-CLEAN.include "tags", "cscope.out"
-CLOBBER.include ds_env.build_dir
+ds_configure(defaults: true) do |c|
+  c.appname = @appname
+  c.build_dir = 'build_dir'
+  c.executable = File.join(c.sourcedir, @appname)
+  c.cmake_base_options = "-DCMAKE_INSTALL_PREFIX:PATH=/usr"
+  c.frontend = c.executable
+  c.editfiles = FileList.new("**/CMakeLists.txt", "README*" )
+  # do NOT preset c.sut without any need!
+end
+
+# @todo that mechanism is brittle and should be replaced by something cleaner
+# this task is called back by Devsupport.ds_conclude
+task :'ds_conclude' do
+  ds_configure(defaults: true) do |c|
+    c.gcov_bin='gcov'
+  end
+  ds_ccommon_post_configure
+end
 
 task :default => :check
 
@@ -76,6 +51,8 @@ desc "clean up build directory"
 task :tidyup do
   FileUtils.rm_rf ds_env.build_dir if File.exists?(ds_env.build_dir)
 end
+
+task :clobber => :tidyup
 
 desc "configure via cmake"
 task :configure do
@@ -124,9 +101,10 @@ end
 desc "run program"
 task :run => :build do
   Dir.chdir ds_env.build_dir do
-   system "#{ds_env.frontend} #{ds_env.run_arguments}"
+    system "#{ds_env.frontend} #{ds_env.run_arguments}"
   end 
 end
+
 
 # ========== debugging support ====================
 

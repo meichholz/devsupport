@@ -22,13 +22,13 @@ ds_configure(defaults: true) do |c|
   # todo: run group of testprograms, inferred from config
   c.frontend = c.executable
   # preset making options and tooling
-  c.make_options = '--silent'
-  c.gcc_versions = nil
-  c.cflags = '-g'
-  c.debug_cflags = '-O0 -fPIC -ftest-coverage -fprofile-arcs'
   c.concurrency = 4 # used on parallel make support
+  c.cflags = '-g'
+  c.gcc_versions = nil
   c.gcovr_exclude = '^3rdparty'
   c.gcovr_bin = 'devsupport/bin/gcovr'
+  c.debug_cflags = '-O0 -fPIC -ftest-coverage -fprofile-arcs'
+  c.make_options = '--silent'
   c.make_bin = 'make'
 end
 
