@@ -225,21 +225,21 @@ namespace :ci do
 end
 
 namespace :test do
-  desc "run ds_env.frontend program through valgrind"
+  desc "Run ds_env.frontend program through valgrind"
   task :grind => 'build' do
     Dir.chdir ds_env.build_dir do
       system "valgrind --leak-check=full --show-reachable=yes #{ds_env.frontend} #{ds_env.run_arguments}"
     end
   end
 
-  desc "run cucumber"
+  desc "Run feature tests with Cucumber"
   task :cucumber => 'build' do
     Dir.chdir "#{ds_env.build_dir}/#{ds_env.features}" do
       sh "cucumber #{ds_env.root_dir}/#{ds_env.features}"
     end
   end
 
-  desc "run all tests"
+  desc "Run common test suite"
   task :suite => 'build' do
     Dir.chdir ds_env.build_dir do
       system("#{ds_env.make_bin} VERBOSE=1 test")
