@@ -89,9 +89,35 @@ CLOBBER.include '**/*.gcda', '**/*.gcno',
   'doc'
 
 # inhibit removal of testing libraries
-[ 'lib', '3rdparty', 'devsupport'].each do |tree|
+[ 'lib', '3rdparty', 'devsupport', 'googletest', 'gtest' ].each do |tree|
   CLEAN.exclude "#{tree}/**/*"
   CLOBBER.exclude "#{tree}/**/*"
+end
+
+
+desc "Rebuild tag file"
+task :tags do
+  FileUtils.rm "tags" if File.exists?("tags")
+  FileUtils.rm "cscope.out" if File.exists?("tags")
+  sh "ctags -R --exclude=debian,pkg,#{ds_env.build_dir}"
+  sh "cscope -b #{ds_env.scopefiles.to_s}"
+end
+
+desc "Clean and git status"
+task :status => :clobber do
+  sh "git status"
+end
+
+desc "Tag and start edit session"
+task :edit => [ :tags ] do
+  sh "#{ds_env.editor} #{ds_env.editfiles.to_s}"
+end
+
+desc "Run app frontend: #{ds_env.frontend}"
+task :run => :build do
+  Dir.chdir ds_env.build_dir do
+    system "#{ds_env.frontend} #{ds_env.run_arguments}"
+  end 
 end
 
 desc "Rebuild tag file"
@@ -105,16 +131,6 @@ end
 desc "Cleanup and git status"
 task :status => :clobber do
   sh "git status"
-end
-
-desc "Start clean edit session"
-task :edit => [ :tags ] do
-  sh "#{ds_env.editor} #{ds_env.editfiles.to_s}"
-end
-
-desc "Run app frontend: #{ds_env.frontend}"
-task :run do
-  sh "#{ds_env.frontend}"
 end
 
 file 'doc' do
@@ -139,7 +155,7 @@ end
 
 namespace :cov do
 
-  desc "run the SUT, producing coverage data"
+  desc "Run the SUT, producing coverage data"
   task :run => 'check' do
     ENV['GTEST_COLOR'] = 'no'
     sh "#{ds_env.sut} #{ds_env.ci_suite_arguments}"
@@ -172,6 +188,29 @@ namespace :ds do
     desc "Switch debug/test mode off"
     task :off do
       FileUtils.rm ds_env.debug_semaphore if File.exists? ds_env.debug_semaphore
+    end
+  end
+
+end
+
+namespace :suck do
+  desc 'Pull in test framework sources from web (deprecated)'
+  task :frameworks => [ :googletest ]
+
+  desc 'Pull google test sources'
+  task :googletest do
+    chdir '3rdparty' do
+      Dir['g*-1*'].each do |treename|
+        puts "removing #{treename}"
+        FileUtils.rm_rf treename
+      end
+      [ 'test', 'mock' ].each do |atype|
+        zipfile = "g#{atype}-1.7.0.zip"
+        sh "wget https://google#{atype}.googlecode.com/files/#{zipfile}"
+        puts "unpacking #{zipfile}"
+        sh "unzip #{zipfile}"
+        FileUtils.rm zipfile
+      end
     end
   end
 end

@@ -44,17 +44,17 @@ end
 
 task :default => :check
 
-desc "reconfigure the source"
+desc "Reconfigure the source"
 task :reconf => [ :tidyup, :configure ]
 
-desc "clean up build directory"
+desc "Clean up build directory"
 task :tidyup do
   FileUtils.rm_rf ds_env.build_dir if File.exists?(ds_env.build_dir)
 end
 
 task :clobber => :tidyup
 
-desc "configure via cmake"
+desc "Configure via CMAKE"
 task :configure do
   FileUtils.mkdir ds_env.build_dir unless  File.exists?(ds_env.build_dir)
   Dir.chdir ds_env.build_dir do
@@ -62,17 +62,17 @@ task :configure do
   end
 end
 
-desc "build the source"
+desc "Build the application"
 task :build => :configure do
   Dir.chdir ds_env.build_dir do
     sh "#{ds_env.make_bin}" # VERBOSE=1
   end 
 end
 
-desc "run full test suite"
+desc "Run full test suite"
 task :check => 'test:suite'
 
-desc "build packages"
+desc "Build packages"
 task :package => :build do
   Dir.chdir ds_env.build_dir do
     system("cpack #{ds_env.root_dir}")
@@ -80,50 +80,24 @@ task :package => :build do
   end 
 end
 
-desc "rebuild tag file"
-task :tags do
-  FileUtils.rm "tags" if File.exists?("tags")
-  FileUtils.rm "cscope.out" if File.exists?("tags")
-  sh "ctags -R --exclude=debian,pkg,#{ds_env.build_dir}"
-  sh "cscope -b #{ds_env.scopefiles.to_s}"
-end
-
-desc "clean and git status"
-task :status => :clobber do
-  sh "git status"
-end
-
-desc "tag and start edit session"
-task :edit => [ :tags ] do
-  sh "#{ds_env.editor} #{ds_env.editfiles.to_s}"
-end
-
-desc "run program"
-task :run => :build do
-  Dir.chdir ds_env.build_dir do
-    system "#{ds_env.frontend} #{ds_env.run_arguments}"
-  end 
-end
-
-
 # ========== debugging support ====================
 
 namespace :test do
-  desc "run ds_env.frontend program through valgrind"
+  desc "Run ds_env.frontend program through valgrind"
   task :grind => 'build' do
     Dir.chdir ds_env.build_dir do
       system "valgrind --leak-check=full --show-reachable=yes #{ds_env.frontend} #{ds_env.run_arguments}"
     end
   end
 
-  desc "run cucumber"
+  desc "Run cucumber"
   task :cucumber => 'build' do
     Dir.chdir "#{ds_env.build_dir}/#{ds_env.features}" do
       sh "cucumber #{ds_env.root_dir}/#{ds_env.features}"
     end
   end
 
-  desc "run all tests"
+  desc "Run all tests"
   task :suite => 'build' do
     Dir.chdir ds_env.build_dir do
       ENV["GTEST_COLOR"]="yes"
@@ -135,42 +109,42 @@ end
 # ========== code coverage =======================
 namespace :cov do
 
-  desc "run the SUT, producing coverage data"
+  desc "Run the SUT, producing coverage data"
   task :run => 'build' do
     output="#{ds_env.build_dir}/tests/unit/reports/"
     sh "#{ds_env.sut} --gtest_output=xml:#{output}"
   end
 
-  desc "use LCOV for transformation (deprecated)"
+  desc "Use LCOV for transformation (deprecated)"
   task :lcov => :run do
     sh "lcov --capture --directory #{ds_env.build_dir}/src --output-file #{ds_env.build_dir}/coverage.info"
     sh "genhtml #{ds_env.build_dir}/coverage.info --output-directory #{ds_env.build_dir}/lcov"
     sh "epiphany #{ds_env.build_dir}/lcov/index.html &"
 end
 
-  desc "check coverage in browser"
+  desc "Check coverage in browser"
   task :html => :run do
     sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --html --html-details -o #{ds_env.build_dir}/gcov.html"
     sh "epiphany #{ds_env.build_dir}/gcov.html &"
     puts "see: #{ds_env.build_dir}/gcov.html"
   end
 
-  desc "export gtest coverage"
+  desc "Export gtest coverage"
   task :gtest => :run do
     sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --xml -o #{ds_env.build_dir}/coverage.xml"
   end
 
-  desc "export cucumber coverage"
+  desc "Export cucumber coverage"
   task :features => 'build' do
     Dir.chdir "#{ds_env.build_dir}/#{ds_env.features}" do
       sh "cucumber -f json -o result.json -f junit -o reports #{ds_env.root_dir}/#{ds_env.features}"
     end
   end
 
-  desc "export all coverages"
+  desc "Export all coverages"
   task :all => [ :gtest, :features ]
 
-  desc "export coverage for jenkins"
+  desc "Export coverage for jenkins"
   task :text => :run do
     sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt}"
   end
@@ -179,7 +153,7 @@ end
 # ========== documentation and asset generation  =======================
 
 namespace :doc do
-  desc "show dependency graph"
+  desc "Show dependency graph"
   task :depgraph => :configure do
     Dir.chdir ds_env.build_dir do
       sh "cmake --graphviz=depdot #{ds_env.cmake_base_options} #{ds_env.cmake_options} #{ds_env.root_dir}"
@@ -188,7 +162,7 @@ namespace :doc do
     end
   end
 
-  desc "build doxygen documentation"
+  desc "Build doxygen documentation"
   task :doxygen do
     FileUtils.rm_rf 'doxygen' if File.exists? 'doxygen'
     FileUtils.mkdir 'doxygen'
@@ -198,7 +172,7 @@ namespace :doc do
     puts "doxygen/html/index.html"
   end
 
-  desc "build all documentation for jenkins"
+  desc "Build all documentation for jenkins"
   task :all => [ :doxygen ]
 
 end

@@ -6,9 +6,9 @@ desc "Bump modules to upstream"
 task :pull do
   sema = ds_env.upstream_semaphore
   FileUtils.rm sema if File.exists?(sema)
-  [ "devsupport", "googletest" ].each do |dir|
-    puts ">>> bumping #{dir} to upstream"
+  [ '3rdparty', 'devsupport', 'googletest' ].each do |dir|
     if File.exists? dir
+      puts ">>> bumping #{dir} to upstream"
       Dir.chdir dir do
         sh "git pull origin master"
       end
