@@ -30,16 +30,17 @@ ds_configure(defaults: true) do |c|
   c.cmake_base_options = "-DCMAKE_INSTALL_PREFIX:PATH=/usr"
   c.frontend = c.executable
   c.editfiles = FileList.new("**/CMakeLists.txt", "README*" )
+  c.cmake_debug_options = "-DDEBUG=ON"
   # do NOT preset c.sut without any need!
 end
 
 # @todo that mechanism is brittle and should be replaced by something cleaner
 # this task is called back by Devsupport.ds_conclude
-task :'ds_conclude' do
-  ds_configure(defaults: true) do |c|
-    c.gcov_bin='gcov'
+
+namespace :ds do
+  task :conclude do
+    ds_ccommon_post_configure
   end
-  ds_ccommon_post_configure
 end
 
 task :default => :check
@@ -58,14 +59,14 @@ desc "Configure via CMAKE"
 task :configure do
   FileUtils.mkdir ds_env.build_dir unless  File.exists?(ds_env.build_dir)
   Dir.chdir ds_env.build_dir do
-    sh "cmake #{ds_env.cmake_base_options} #{ds_env.cmake_options} #{ds_env.root_dir}"
+    sh "cmake #{ds_env.cmake_base_options} #{ds_env.cmake_options} #{ds_debug_mode?  ? ds_env.cmake_debug_options : ''} #{ds_env.root_dir}"
   end
 end
 
 desc "Build the application"
 task :build => :configure do
   Dir.chdir ds_env.build_dir do
-    sh "#{ds_env.make_bin}" # VERBOSE=1
+    sh "#{ds_env.make}"
   end 
 end
 

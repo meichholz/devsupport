@@ -1,3 +1,5 @@
+# note: these tasks will end up in name space "ds"
+
 load File.join(File.dirname(__FILE__), 'rake_abandon.rb')
 
 CLEAN.include ".yardoc", "*~", "t", "tt"

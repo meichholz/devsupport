@@ -33,6 +33,7 @@ ds_configure(defaults: true) do |c|
   c.editfiles = FileList.new 'configure.ac', "#{c.sourcedir}/**/Makefile.am", 'tests/**/Makefile.am'
   c.scopefiles = FileList.new "#{c.sourcedir}/**/*.c*", "#{c.sourcedir}/**/*.h"
   c.automakefiles = FileList.new '**/*.am'
+  c.make_options = '--silent'
 end
 
 module Devsupport
@@ -99,11 +100,10 @@ module Devsupport
 end
 
 # @todo that mechanism is brittle and should be replaced by something cleaner...
-task 'ds:conclude' do
-  ds_configure(defaults: true) do |c|
-    c.gcov_bin='gcov'
+namespace :ds do
+  task :conclude do
+    ds_ccommon_post_configure
   end
-  ds_ccommon_post_configure
 end
 
 # it is *extremely* important to leave the generated configure stuff during "rake clean"

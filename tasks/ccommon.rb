@@ -6,6 +6,7 @@
 # - C++ or C
 
 ENV['GTEST_COLOR'] = 'auto'
+ENV['LANG'] = 'C'
 
 namespace :ds do
   ds_tasks_for :common
@@ -13,7 +14,7 @@ end
 
 ds_configure(defaults: true) do |c|
   c.root_dir = Dir.pwd
-  c.debug_semaphore = 'dev_debug' # debug the SUT, not the rake framework itself :-)
+  c.debug_semaphore = "#{Dir.pwd}/dev_debug" # debug the SUT, not the rake framework itself :-)
   # preset standard file layout
   c.sourcedir = 'src'
   c.sourcedirs = [ c.sourcedir, 'tests' ]
@@ -28,13 +29,16 @@ ds_configure(defaults: true) do |c|
   c.gcovr_exclude = '^3rdparty'
   c.gcovr_bin = 'devsupport/bin/gcovr'
   c.debug_cflags = '-O0 -fPIC -ftest-coverage -fprofile-arcs'
-  c.make_options = '--silent'
   c.make_bin = 'make'
+  c.make_options = ''
 end
 
+def ds_debug_mode?
+  File.exists?(ds_env.debug_semaphore) || ENV['DEV_DEBUGMODE']
+end
 
 def ds_ccommon_post_configure
-  @debug_mode = File.exists?(ds_env.debug_semaphore) || ENV['DEV_DEBUGMODE']
+  @debug_mode = ds_debug_mode?
   version = nil
   # find suitable compiler version, needed for CMAKE and C++11
   if ds_env.gcc_versions
@@ -55,17 +59,18 @@ def ds_ccommon_post_configure
   # abstract away some other glue settings as kind of macros
   ds_configure(defaults: true) do |c|
     c.ci_suite_arguments = "--gtest-options=xml:#{ds_env.build_dir}/tests/unit/reports/"
-    c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency}"
+    c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency} #{ds_env.make_options}"
     c.gcov_bin = version ? "gcov-#{version}" : "gcov"
     c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
     c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
-    c.builddirs.each do |tree|
-      [ 'a', 'o', 'so', 'lo', 'la' ].each do |ext|
+    c.builddirs = [ ds_env.build_dir ]
+  end
+  ds_env.builddirs.each do |tree|
+      CLOBBER.include "#{tree}/tests/**/reports"
+      [ 'deps', 'gcda', 'gcno', 'a', 'o', 'so', 'lo', 'la' ].each do |ext|
         CLOBBER.include "#{tree}/**/*.#{ext}"
       end
     end
-    CLOBBER.include File.join(c.build_dir, 'tests/**/reports')
-  end
 end
 
 task :default => :check
@@ -73,7 +78,7 @@ task :default => :check
 desc 'Use environment for debugging (internal, chainable)'
 task :debugenv do
   cflags = ds_env.cflags
-  cflags << " " << ds_env.debug_cflags if @debug_mode
+  cflags << " " << ds_env.debug_cflags if ds_debug_mode?
   ENV['CFLAGS'] = cflags
   ENV['CXXFLAGS'] = cflags
 end
@@ -81,12 +86,9 @@ end
 # it is *extremely* important to leave the generated configure stuff during "rake clean"
 # "rake clean" may remove just noise
 CLEAN.include 'cscope.out', 'doxygen', 'sloc.sc'
-CLEAN.include "**/.deps"
 
 # emergency cleanup, if "make clean" fails too severely, should go to taskset
-CLOBBER.include '**/*.gcda', '**/*.gcno',
-  'coverage.xml',
-  'doc'
+CLOBBER.include 'coverage.xml', 'doc'
 
 # inhibit removal of testing libraries
 [ 'lib', '3rdparty', 'devsupport', 'googletest', 'gtest' ].each do |tree|
@@ -242,7 +244,7 @@ namespace :test do
   desc "Run common test suite"
   task :suite => 'build' do
     Dir.chdir ds_env.build_dir do
-      system("#{ds_env.make_bin} VERBOSE=1 test")
+      system("#{ds_env.make} test")
     end 
   end
 end
