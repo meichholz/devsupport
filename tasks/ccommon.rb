@@ -61,7 +61,7 @@ def ds_ccommon_post_configure
     c.ci_suite_arguments = "--gtest-options=xml:#{ds_env.build_dir}/tests/unit/reports/"
     c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency} #{ds_env.make_options}"
     c.gcov_bin = version ? "gcov-#{version}" : "gcov"
-    c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r #{ds_env.build_dir} --branches -u -e '#{ds_env.gcovr_exclude}'"
+    c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
     c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
     c.builddirs = [ ds_env.build_dir ]
   end
@@ -167,23 +167,17 @@ namespace :cov do
 
   desc "Generate HTML coverage report"
   task :html => [ :run, 'doc' ] do
-    #Dir.chdir ds_env.build_dir do
-      sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --html -o doc/gcov.html"
-    #end
+    sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --html -o doc/gcov.html"
   end
 
   desc "Preview coverage"
   task :view => :html do
-    #Dir.chdir ds_env.build_dir do
-      sh "#{ds_env.browser} doc/gcov.html &"
-    #end
+    sh "#{ds_env.browser} doc/gcov.html &"
   end
 
   desc "Produce XML coverage report"
   task :xml => 'doc' do
-    Dir.chdir ds_env.build_dir do
-      sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --xml -o doc/coverage.xml"
-    end
+    sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --xml -o doc/coverage.xml"
   end
 end
 
