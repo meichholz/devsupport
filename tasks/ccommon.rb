@@ -27,7 +27,7 @@ ds_configure(defaults: true) do |c|
   c.cflags = '-g'
   c.gcc_versions = nil
   c.gcovr_exclude = '^3rdparty'
-  c.gcovr_bin = 'devsupport/bin/gcovr'
+  c.gcovr_bin = "#{Dir.pwd}/devsupport/bin/gcovr"
   c.debug_cflags = '-O0 -fPIC -ftest-coverage -fprofile-arcs'
   c.make_bin = 'make'
   c.make_options = ''
@@ -61,7 +61,7 @@ def ds_ccommon_post_configure
     c.ci_suite_arguments = "--gtest-options=xml:#{ds_env.build_dir}/tests/unit/reports/"
     c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency} #{ds_env.make_options}"
     c.gcov_bin = version ? "gcov-#{version}" : "gcov"
-    c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
+    c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r #{ds_env.build_dir} --branches -u -e '#{ds_env.gcovr_exclude}'"
     c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
     c.builddirs = [ ds_env.build_dir ]
   end
@@ -160,22 +160,30 @@ namespace :cov do
   desc "Run the SUT, producing coverage data"
   task :run => 'check' do
     ENV['GTEST_COLOR'] = 'no'
-    sh "#{ds_env.sut} #{ds_env.ci_suite_arguments}"
+    Dir.chdir ds_env.build_dir do
+      sh "#{ds_env.sut} #{ds_env.ci_suite_arguments}"
+    end
   end
 
   desc "Generate HTML coverage report"
   task :html => [ :run, 'doc' ] do
-    sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} -r . --branches -u --html -o doc/gcov.html"
+    #Dir.chdir ds_env.build_dir do
+      sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --html -o doc/gcov.html"
+    #end
   end
 
   desc "Preview coverage"
   task :view => :html do
-    sh "#{ds_env.browser} doc/gcov.html &"
+    #Dir.chdir ds_env.build_dir do
+      sh "#{ds_env.browser} doc/gcov.html &"
+    #end
   end
 
   desc "Produce XML coverage report"
   task :xml => 'doc' do
-    sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} -r . --branches -u --xml -o doc/coverage.xml"
+    Dir.chdir ds_env.build_dir do
+      sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --xml -o doc/coverage.xml"
+    end
   end
 end
 
