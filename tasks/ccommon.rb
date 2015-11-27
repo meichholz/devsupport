@@ -25,9 +25,10 @@ ds_configure(defaults: true) do |c|
   # preset making options and tooling
   c.concurrency = 4 # used on parallel make support
   c.cflags = '-g'
+  c.compiler = :gcc
   c.gcc_versions = nil
   c.gcovr_exclude = '^3rdparty'
-  c.gcovr_bin = "#{Dir.pwd}/devsupport/bin/gcovr"
+  c.gcovr_bin = "#{ds_env.base_path}/bin/gcovr"
   c.debug_cflags = '-O0 -fPIC -ftest-coverage -fprofile-arcs'
   c.make_bin = 'make'
   c.make_options = ''
@@ -41,7 +42,7 @@ def ds_ccommon_post_configure
   @debug_mode = ds_debug_mode?
   version = nil
   # find suitable compiler version, needed for CMAKE and C++11
-  if ds_env.gcc_versions
+  if ds_env.gcc_versions and ds_env.compiler == :gcc
     ds_env.gcc_versions.each do |ver|
       if system("g++-#{ver} --version >/dev/null 2>&1")
         puts "DEBUG: setting gcc-#{ver} as preferred compiler" if ds_env.debug_rake
@@ -51,19 +52,29 @@ def ds_ccommon_post_configure
     end
   end
   # make results available to CMAKE
-  if version
-    ENV["CXX"] = "g++-#{version}"
-    ENV["CC"]  = "gcc-#{version}"
-    ENV["GCOV"]  = "gcov-#{version}"
+  ENV['GCOV_BIN'] = 'gcov'
+  if ds_env.compiler == :clang
+    ENV['CXX'] = 'clang++'
+    ENV['CC']  = 'clang'
+    ENV['GCOV_BIN']  = 'llvm-cov gcov'
+  else
+    if version
+      ENV['CXX'] = "g++-#{version}"
+      ENV['CC']  = "gcc-#{version}"
+      ENV['GCOV_BIN']  = "gcov-#{version}"
+    end
   end
   # abstract away some other glue settings as kind of macros
   ds_configure(defaults: true) do |c|
+    c.builddirs = [ ds_env.build_dir ]
+    c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
     c.ci_suite_arguments = "--gtest-options=xml:#{ds_env.build_dir}/tests/unit/reports/"
     c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency} #{ds_env.make_options}"
-    c.gcov_bin = version ? "gcov-#{version}" : "gcov"
+    c.gcov_bin = "#{ds_env.base_path}/bin/gcov-wrap"
+  end
+  # if we use values modded above, we must use them in a full new stage
+  ds_configure(defaults: true) do |c|
     c.gcovr_opt = "--gcov-executable=#{ds_env.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
-    c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
-    c.builddirs = [ ds_env.build_dir ]
   end
   ds_env.builddirs.each do |tree|
       CLOBBER.include "#{tree}/tests/**/reports"
@@ -179,6 +190,7 @@ namespace :cov do
   task :xml => 'doc' do
     sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --xml -o doc/coverage.xml"
   end
+
 end
 
 namespace :ds do

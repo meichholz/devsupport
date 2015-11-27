@@ -160,8 +160,8 @@ module Devsupport
           hostname: Socket.gethostname,
           root?: (Process.uid == 0),
           mandatory_umask: :none,
-          rdoc: "rdoc",
-          ronn: "ronn",
+          rdoc: 'rdoc',
+          ronn: 'ronn',
           rvm_only: false,
           base_path: base_path,
           yardoc_path: 'yard',
@@ -169,7 +169,7 @@ module Devsupport
           startup_tasks: %w(clean edit),
           debug_rake: ENV['DEBUG_RAKE'] ? true : false,
           upstream_semaphore: 'dev_upstream',
-          run_arguments: "",
+          run_arguments: '',
         }
       end
     end
