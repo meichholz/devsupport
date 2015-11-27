@@ -61,7 +61,7 @@ def ds_ccommon_post_configure
     c.ci_suite_arguments = "--gtest-options=xml:#{ds_env.build_dir}/tests/unit/reports/"
     c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency} #{ds_env.make_options}"
     c.gcov_bin = version ? "gcov-#{version}" : "gcov"
-    c.gcovr_opt = "--gcov-executable=#{c.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
+    c.gcovr_opt = "--gcov-executable=#{ds_env.gcov_bin} -r . --branches -u -e '#{ds_env.gcovr_exclude}'"
     c.sut = "#{ds_env.build_dir}/tests/unit/test_main"
     c.builddirs = [ ds_env.build_dir ]
   end
