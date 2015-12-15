@@ -190,6 +190,10 @@ namespace :cov do
       sh "#{ds_env.sut} #{ds_env.ci_suite_arguments}"
     end
     sh "lcov --gcov-tool #{ds_env.gcov_bin} -b . -d . -c -o #{ds_env.lcov_infofile}"
+    patterns = ds_env.sourcedirs.collect do |relname|
+      "'"+File.join(ds_env.root_dir, relname, '*')+"'"
+    end
+    sh "lcov --extract #{ds_env.lcov_infofile} -o #{ds_env.lcov_infofile} #{patterns.join ' '}"
   end
 
   desc "Generate HTML coverage reports"
