@@ -17,6 +17,7 @@ ds_configure(defaults: true) do |c|
   c.debug_semaphore = "#{Dir.pwd}/dev_debug" # debug the SUT, not the rake framework itself :-)
   # preset standard file layout
   c.sourcedir = 'src'
+  c.docdir = 'doc'
   c.sourcedirs = [ c.sourcedir, 'tests' ]
   c.features = 'tests/features'
   c.scopefiles = Dir['src/**/*.[ch]*', 'tests/unit/*.[ch]*'].join(' ')
@@ -71,6 +72,8 @@ def ds_ccommon_post_configure
     c.ci_suite_arguments = "--gtest-options=xml:#{ds_env.build_dir}/tests/unit/reports/"
     c.make = "#{ds_env.make_bin} -j#{ds_env.concurrency} #{ds_env.make_options}"
     c.gcov_bin = "#{ds_env.base_path}/bin/gcov-wrap"
+    c.cov_reports = "#{ds_env.docdir}/coverage"
+    c.lcov_infofile = "#{ds_env.build_dir}/lcov.data"
   end
   # if we use values modded above, we must use them in a full new stage
   ds_configure(defaults: true) do |c|
@@ -146,8 +149,8 @@ task :status => :clobber do
   sh "git status"
 end
 
-file 'doc' do
-  FileUtils.mkdir "doc" unless File.exists? "doc"
+file ds_env.docdir do
+  FileUtils.mkdir ds_env.docdir unless File.exists? ds_env.docdir
 end
 
 namespace :doc do
@@ -168,27 +171,42 @@ end
 
 namespace :cov do
 
+  # for coverage, it is *extremely* important to run lcov/gcovr in
+  # the project root directory, *not* the CMAKE build-directory
+
+  desc "Clear LCOV state"
+  task :clear do
+    sh 'lcov -b . -d . --zerocounters'
+  end
+
+  file ds_env.cov_reports => ds_env.docdir do
+    Fileutils.mkdir ds_env.cov_reports unless File.exists? ds_env.cov_reports
+  end
+
   desc "Run the SUT, producing coverage data"
   task :run => 'check' do
     ENV['GTEST_COLOR'] = 'no'
     Dir.chdir ds_env.build_dir do
       sh "#{ds_env.sut} #{ds_env.ci_suite_arguments}"
     end
+    sh "lcov --gcov-tool #{ds_env.gcov_bin} -b . -d . -c -o #{ds_env.lcov_infofile}"
   end
 
-  desc "Generate HTML coverage report"
-  task :html => [ :run, 'doc' ] do
-    sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --html -o doc/gcov.html"
+  desc "Generate HTML coverage reports"
+  task :html => [ :run, ds_env.cov_reports ] do
+    sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --html -o #{ds_env.docdir}/gcov.html"
+    sh "genhtml #{ds_env.lcov_infofile} -o #{ds_env.cov_reports}"
   end
 
-  desc "Preview coverage"
+  desc "Preview lcov coverage report"
   task :view => :html do
-    sh "#{ds_env.browser} doc/gcov.html &"
+    # sh "#{ds_env.browser} ds_env.civ_reports}/gcov.html &"
+    sh "#{ds_env.browser} #{ds_env.cov_reports}/index.html &"
   end
 
-  desc "Produce XML coverage report"
-  task :xml => 'doc' do
-    sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --xml -o doc/coverage.xml"
+  desc "Produce XML coverage report via gcov"
+  task :xml => ds_env.cov_reports do
+    sh "#{ds_env.gcovr_bin} #{ds_env.gcovr_opt} --xml -o #{ds_env.cov_reports}/coverage.xml"
   end
 
 end
@@ -235,8 +253,8 @@ namespace :ci do
   desc 'CI full cycle'
   task :all => [ :build, :check, :cov ]
 
-  desc 'Transform coverage report for cobertura'
-  task :cov => ['cov:run', 'cov:xml', 'cov:html' ]
+  desc 'Transform coverage report for jenkins/cobertura'
+  task :cov => [ 'cov:clear', 'cov:run', 'cov:xml', 'cov:html' ]
 
 end
 
